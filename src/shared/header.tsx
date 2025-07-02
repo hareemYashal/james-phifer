@@ -1,35 +1,40 @@
-import {FileText} from "lucide-react";
-import React from "react";
+import Image from "next/image";
 
 const Header = () => {
   return (
     <div
       style={{
-        padding: "24px",
-        borderBottom: "1px solid #e2e8f0",
-        background: "linear-gradient(to right, #2563eb, #1d4ed8)",
-        color: "white",
-        flexShrink: 0,
+        backgroundColor: "white",
+        borderBottom: "1px solid #e5e7eb",
+        boxShadow:
+          "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
       }}
     >
-      <div style={{display: "flex", alignItems: "center"}}>
+      <div
+        style={{
+          padding: "24px 32px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
         <div
           style={{
-            padding: "8px",
-            backgroundColor: "rgba(255, 255, 255, 0.2)",
-            borderRadius: "8px",
-            marginRight: "12px",
+            display: "flex",
+            alignItems: "center",
+            gap: "24px",
           }}
         >
-          <FileText size={24} />
-        </div>
-        <div>
-          <h1 style={{fontSize: "20px", fontWeight: "bold", margin: 0}}>
-            Document Processor
-          </h1>
-          <p style={{color: "#bfdbfe", fontSize: "14px", margin: "4px 0 0 0"}}>
-            PDF Data Entry System
-          </p>
+          <div style={{flexShrink: 0}}>
+            <Image
+              src="/logo.png"
+              alt="Phifer Consulting Logo"
+              width={200}
+              height={100}
+              style={{objectFit: "contain"}}
+              priority
+            />
+          </div>
         </div>
       </div>
     </div>

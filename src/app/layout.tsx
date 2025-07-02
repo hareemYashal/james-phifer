@@ -6,8 +6,8 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "PDF Data Entry System",
-  description: "Professional PDF document processing and data entry application",
+  title: "PDF Data Extractor - Phifer Consulting",
+  description: "Professional PDF document processing and data extraction platform",
 }
 
 export default function RootLayout({
