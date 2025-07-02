@@ -1,8 +1,10 @@
-import DataEntryPage from "@/components/pdf-viewer/pdf-viewer";
-import React from "react";
+"use client"
+import dynamic from "next/dynamic";
 
-const page = () => {
-  return <DataEntryPage />;
-};
+const PdfViewerClient = dynamic(() => import("@/components/pdf-viewer/pdf"), {
+  ssr: false,
+});
 
-export default page;
+export default function Page() {
+  return <PdfViewerClient />;
+}
