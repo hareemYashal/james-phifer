@@ -6,8 +6,8 @@ const Header = () => {
       style={{
         backgroundColor: "white",
         borderBottom: "1px solid #e5e7eb",
-        boxShadow:
-          "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+        // boxShadow:
+          // "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
       }}
     >
       <div
@@ -27,7 +27,7 @@ const Header = () => {
         >
           <div style={{flexShrink: 0}}>
             <Image
-              src="/logo.png"
+              src="/logo1.jpg"
               alt="Phifer Consulting Logo"
               width={200}
               height={100}

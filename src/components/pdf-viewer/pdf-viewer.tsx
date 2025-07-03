@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { Document, Page, pdfjs } from "react-pdf"
+import type React from "react";
+import {useState} from "react";
+import {Document, Page, pdfjs} from "react-pdf";
 import {
   Upload,
   ZoomIn,
@@ -18,11 +18,11 @@ import {
   Download,
   Settings,
   Eye,
-} from "lucide-react"
-import Header from "@/shared/header"
+} from "lucide-react";
+import Header from "@/shared/header";
 
 // Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
 const buttonStyles = {
   primary: {
@@ -68,130 +68,154 @@ const buttonStyles = {
     gap: "8px",
     opacity: 0.6,
   },
-}
+};
 
 const cardStyles = {
   backgroundColor: "white",
   borderRadius: "12px",
-  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+  boxShadow:
+    "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
   border: "1px solid #e5e7eb",
   overflow: "hidden",
-}
+};
 
 export default function PDFDataExtractor() {
-  const [file, setFile] = useState<File | null>(null)
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
-  const [numPages, setNumPages] = useState<number>(1)
-  const [pageNumber, setPageNumber] = useState<number>(1)
-  const [scale, setScale] = useState<number>(1.0)
-  const [rotate, setRotate] = useState<number>(0)
-  const [formData, setFormData] = useState<Record<string, string>>({})
-  const [fields, setFields] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
+  const [file, setFile] = useState<File | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [numPages, setNumPages] = useState<number>(1);
+  const [pageNumber, setPageNumber] = useState<number>(1);
+  const [scale, setScale] = useState<number>(1.0);
+  const [rotate, setRotate] = useState<number>(0);
+  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [fields, setFields] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleFieldKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, idx: number) => {
+  const handleFieldKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    idx: number
+  ) => {
     if (e.key === "Enter") {
-      const next = document.getElementById(`field-${idx + 1}`)
+      const next = document.getElementById(`field-${idx + 1}`);
       if (next) {
-        next.scrollIntoView({ behavior: "smooth", block: "center" })
-        ;(next as HTMLInputElement).focus()
+        next.scrollIntoView({behavior: "smooth", block: "center"});
+        (next as HTMLInputElement).focus();
       }
     }
-  }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
-    if (!selectedFile) return
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
 
-    setFile(selectedFile)
-    setPdfUrl(URL.createObjectURL(selectedFile))
-    setLoading(true)
+    setFile(selectedFile);
+    setPdfUrl(URL.createObjectURL(selectedFile));
+    setLoading(true);
 
-    const formData = new FormData()
-    formData.append("file", selectedFile)
+    const formData = new FormData();
+    formData.append("file", selectedFile);
 
     try {
-      const res = await fetch("https://064a-182-180-99-121.ngrok-free.app/process_document", {
-        method: "POST",
-        body: formData,
-      })
-      const data = await res.json()
-      setFormData(data.fields || {})
-      setFields(Object.keys(data.fields || {}))
+      const res = await fetch(
+        "https://064a-182-180-99-121.ngrok-free.app/process_document",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+      const data = await res.json();
+      setFormData(data.fields || {});
+      setFields(Object.keys(data.fields || {}));
     } catch (err) {
-      console.error("Error processing document:", err)
-      setFormData({})
-      setFields([])
+      console.error("Error processing document:", err);
+      setFormData({});
+      setFields([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleFieldChange = (key: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [key]: value }))
-  }
+    setFormData((prev) => ({...prev, [key]: value}));
+  };
 
-  const handleZoomIn = () => setScale((s) => Math.min(s + 0.2, 3))
-  const handleZoomOut = () => setScale((s) => Math.max(s - 0.2, 0.5))
+  const handleZoomIn = () => setScale((s) => Math.min(s + 0.2, 3));
+  const handleZoomOut = () => setScale((s) => Math.max(s - 0.2, 0.5));
   const handleReset = () => {
-    setScale(1)
-    setPageNumber(1)
-    setRotate(0)
-  }
+    setScale(1);
+    setPageNumber(1);
+    setRotate(0);
+  };
 
-  const handleRotateLeft = () => setRotate((r) => (r - 90 + 360) % 360)
-  const handleRotateRight = () => setRotate((r) => (r + 90) % 360)
-  const handlePrevPage = () => setPageNumber((p) => Math.max(1, p - 1))
-  const handleNextPage = () => setPageNumber((p) => Math.min(numPages, p + 1))
+  const handleRotateLeft = () => setRotate((r) => (r - 90 + 360) % 360);
+  const handleRotateRight = () => setRotate((r) => (r + 90) % 360);
+  const handlePrevPage = () => setPageNumber((p) => Math.max(1, p - 1));
+  const handleNextPage = () => setPageNumber((p) => Math.min(numPages, p + 1));
 
   const handleSendToLIMS = async () => {
-    alert("Data and image would be sent to the database (not implemented)")
-  }
+    alert("Data and image would be sent to the database (not implemented)");
+  };
 
   const handleExportData = () => {
-    const dataStr = JSON.stringify(formData, null, 2)
-    const dataBlob = new Blob([dataStr], { type: "application/json" })
-    const url = URL.createObjectURL(dataBlob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = "extracted-data.json"
-    link.click()
-    URL.revokeObjectURL(url)
-  }
+    const dataStr = JSON.stringify(formData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: "application/json"});
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "extracted-data.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div
       style={{
-        minHeight: "100vh",
+        maxHeight: "100vh",
         background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
-      <Header />
+      <div
+        style={{position: "sticky", top: 0, zIndex: 100, background: "white"}}
+      >
+        <Header />
+      </div>
 
-      <div style={{ display: "flex", height: "calc(100vh - 140px)" }}>
+      <div
+        style={{
+          display: "flex",
+          height: "calc(100vh - 170px)",
+          flexDirection: "row",
+        }}
+      >
         {/* Sidebar */}
         <div
           style={{
-            width: "400px",
-            minWidth: "400px",
+            flex: "0 0 100%",
+            maxWidth: "600px",
+            minWidth: "0",
+            width: "100%",
             backgroundColor: "white",
             borderRight: "1px solid #e5e7eb",
             boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
             display: "flex",
             flexDirection: "column",
+            zIndex: 2,
+            height: "100%",
+            overflowY: "auto",
           }}
         >
           {/* File Upload Section */}
-          <div style={{ padding: "24px", borderBottom: "1px solid #e5e7eb" }}>
+          <div style={{padding: "24px", borderBottom: "1px solid #e5e7eb"}}>
             <div
               style={{
                 ...cardStyles,
                 border: "2px dashed #3b82f6",
                 backgroundColor: "#eff6ff",
+                width: "100%",
+                boxSizing: "border-box",
               }}
             >
-              <div style={{ padding: "24px" }}>
+              <div style={{padding: "24px"}}>
                 <div
                   style={{
                     display: "flex",
@@ -200,7 +224,7 @@ export default function PDFDataExtractor() {
                     marginBottom: "16px",
                   }}
                 >
-                  <Upload size={20} style={{ color: "#3b82f6" }} />
+                  <Upload size={20} style={{color: "#3b82f6"}} />
                   <h3
                     style={{
                       fontSize: "18px",
@@ -213,7 +237,7 @@ export default function PDFDataExtractor() {
                   </h3>
                 </div>
 
-                <div style={{ position: "relative" }}>
+                <div style={{position: "relative"}}>
                   <input
                     type="file"
                     accept="application/pdf"
@@ -243,7 +267,10 @@ export default function PDFDataExtractor() {
                       transition: "all 0.2s",
                     }}
                   >
-                    <Upload size={32} style={{ color: "#3b82f6", marginBottom: "12px" }} />
+                    <Upload
+                      size={32}
+                      style={{color: "#3b82f6", marginBottom: "12px"}}
+                    />
                     <p
                       style={{
                         fontSize: "14px",
@@ -253,9 +280,9 @@ export default function PDFDataExtractor() {
                         margin: 0,
                       }}
                     >
-                      {file ? file.name : "Click to upload PDF or drag & drop"}
+                      {file ? file.name : "Click to upload PDF"}
                     </p>
-                    <p
+                    {/* <p
                       style={{
                         fontSize: "12px",
                         color: "#6b7280",
@@ -263,8 +290,8 @@ export default function PDFDataExtractor() {
                         margin: 0,
                       }}
                     >
-                      PDF files only • Max 10MB
-                    </p>
+                      PDF files only
+                    </p> */}
                   </div>
                 </div>
               </div>
@@ -289,7 +316,7 @@ export default function PDFDataExtractor() {
                 marginBottom: "20px",
               }}
             >
-              <Settings size={20} style={{ color: "#059669" }} />
+              <Settings size={20} style={{color: "#059669"}} />
               <h3
                 style={{
                   fontSize: "18px",
@@ -366,9 +393,22 @@ export default function PDFDataExtractor() {
               )}
 
               {!loading && fields.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                  }}
+                >
                   {fields.map((key, idx) => (
-                    <div key={key} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div
+                      key={key}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                      }}
+                    >
                       <label
                         htmlFor={`field-${idx}`}
                         style={{
@@ -409,12 +449,13 @@ export default function PDFDataExtractor() {
                           outline: "none",
                         }}
                         onFocus={(e) => {
-                          e.target.style.borderColor = "#3b82f6"
-                          e.target.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.1)"
+                          e.target.style.borderColor = "#3b82f6";
+                          e.target.style.boxShadow =
+                            "0 0 0 3px rgba(59, 130, 246, 0.1)";
                         }}
                         onBlur={(e) => {
-                          e.target.style.borderColor = "#d1d5db"
-                          e.target.style.boxShadow = "none"
+                          e.target.style.borderColor = "#d1d5db";
+                          e.target.style.boxShadow = "none";
                         }}
                       />
                     </div>
@@ -445,7 +486,7 @@ export default function PDFDataExtractor() {
                       marginBottom: "16px",
                     }}
                   >
-                    <FileText size={32} style={{ color: "#9ca3af" }} />
+                    <FileText size={32} style={{color: "#9ca3af"}} />
                   </div>
                   <h4
                     style={{
@@ -479,7 +520,9 @@ export default function PDFDataExtractor() {
               backgroundColor: "#f8fafc",
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div
+              style={{display: "flex", flexDirection: "column", gap: "12px"}}
+            >
               <button
                 onClick={handleSendToLIMS}
                 disabled={fields.length === 0}
@@ -487,7 +530,8 @@ export default function PDFDataExtractor() {
                   fields.length > 0
                     ? {
                         ...buttonStyles.primary,
-                        background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                        background:
+                          "linear-gradient(135deg, #059669 0%, #047857 100%)",
                         width: "100%",
                         justifyContent: "center",
                       }
@@ -499,7 +543,9 @@ export default function PDFDataExtractor() {
                 }
               >
                 <Send size={18} />
-                {fields.length > 0 ? "Send to LIMS Database" : "No Data Available"}
+                {fields.length > 0
+                  ? "Send to LIMS Database"
+                  : "No Data Available"}
               </button>
 
               {fields.length > 0 && (
@@ -529,7 +575,9 @@ export default function PDFDataExtractor() {
             display: "flex",
             flexDirection: "column",
             backgroundColor: "#f8fafc",
-         overflow:'auto'
+            minWidth: 0,
+            height: "100%",
+            overflowY: "auto",
           }}
         >
           {/* PDF Content */}
@@ -547,10 +595,11 @@ export default function PDFDataExtractor() {
               style={{
                 ...cardStyles,
                 width: "100%",
-                maxWidth: "1200px",
+                maxWidth: "100%",
                 flex: 1,
                 display: "flex",
                 flexDirection: "column",
+                boxSizing: "border-box",
               }}
             >
               <div
@@ -565,7 +614,7 @@ export default function PDFDataExtractor() {
                 {pdfUrl ? (
                   <Document
                     file={pdfUrl}
-                    onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+                    onLoadSuccess={({numPages}) => setNumPages(numPages)}
                     loading={
                       <div
                         style={{
@@ -627,7 +676,8 @@ export default function PDFDataExtractor() {
                       style={{
                         width: "96px",
                         height: "96px",
-                        background: "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
+                        background:
+                          "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
                         borderRadius: "50%",
                         display: "flex",
                         alignItems: "center",
@@ -635,7 +685,7 @@ export default function PDFDataExtractor() {
                         margin: "0 auto 24px",
                       }}
                     >
-                      <Eye size={48} style={{ color: "#3b82f6" }} />
+                      <Eye size={48} style={{color: "#3b82f6"}} />
                     </div>
                     <h2
                       style={{
@@ -657,7 +707,8 @@ export default function PDFDataExtractor() {
                         marginRight: "auto",
                       }}
                     >
-                      Upload a PDF document from the sidebar to begin viewing and extracting data
+                      Upload a PDF document from the sidebar to begin viewing
+                      and extracting data
                     </p>
                     <div
                       style={{
@@ -669,7 +720,13 @@ export default function PDFDataExtractor() {
                         color: "#6b7280",
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
                         <div
                           style={{
                             width: "8px",
@@ -680,7 +737,13 @@ export default function PDFDataExtractor() {
                         ></div>
                         Zoom & Rotate
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
                         <div
                           style={{
                             width: "8px",
@@ -691,7 +754,13 @@ export default function PDFDataExtractor() {
                         ></div>
                         Multi-page Support
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
                         <div
                           style={{
                             width: "8px",
@@ -714,11 +783,12 @@ export default function PDFDataExtractor() {
                 style={{
                   ...cardStyles,
                   width: "100%",
-                  maxWidth: "1200px",
+                  maxWidth: "100%",
                   marginTop: "24px",
+                  boxSizing: "border-box",
                 }}
               >
-                <div style={{ padding: "16px" }}>
+                <div style={{padding: "16px"}}>
                   <div
                     style={{
                       display: "flex",
@@ -727,7 +797,13 @@ export default function PDFDataExtractor() {
                     }}
                   >
                     {/* Page Navigation */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                      }}
+                    >
                       {numPages > 1 && (
                         <>
                           <button
@@ -736,7 +812,8 @@ export default function PDFDataExtractor() {
                             style={{
                               ...buttonStyles.secondary,
                               opacity: pageNumber === 1 ? 0.5 : 1,
-                              cursor: pageNumber === 1 ? "not-allowed" : "pointer",
+                              cursor:
+                                pageNumber === 1 ? "not-allowed" : "pointer",
                             }}
                           >
                             <ChevronLeft size={16} />
@@ -753,7 +830,9 @@ export default function PDFDataExtractor() {
                               borderRadius: "8px",
                             }}
                           >
-                            <span style={{ fontSize: "14px", color: "#6b7280" }}>Page</span>
+                            <span style={{fontSize: "14px", color: "#6b7280"}}>
+                              Page
+                            </span>
                             <span
                               style={{
                                 backgroundColor: "white",
@@ -767,7 +846,9 @@ export default function PDFDataExtractor() {
                             >
                               {pageNumber}
                             </span>
-                            <span style={{ fontSize: "14px", color: "#6b7280" }}>of</span>
+                            <span style={{fontSize: "14px", color: "#6b7280"}}>
+                              of
+                            </span>
                             <span
                               style={{
                                 backgroundColor: "white",
@@ -789,7 +870,10 @@ export default function PDFDataExtractor() {
                             style={{
                               ...buttonStyles.secondary,
                               opacity: pageNumber === numPages ? 0.5 : 1,
-                              cursor: pageNumber === numPages ? "not-allowed" : "pointer",
+                              cursor:
+                                pageNumber === numPages
+                                  ? "not-allowed"
+                                  : "pointer",
                             }}
                           >
                             Next
@@ -800,7 +884,13 @@ export default function PDFDataExtractor() {
                     </div>
 
                     {/* Scale Info */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                      }}
+                    >
                       <span
                         style={{
                           backgroundColor: "#f3f4f6",
@@ -925,5 +1015,5 @@ export default function PDFDataExtractor() {
         </div>
       </div>
     </div>
-  )
+  );
 }
