@@ -519,7 +519,15 @@ export default function FormParserInterface() {
           </div>
 
           {/* Fields List */}
-          <div style={{flex: 1, overflowY: "auto", padding: "16px"}}>
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "16px",
+              minHeight: 0,
+              paddingBottom: 80,
+            }}
+          >
             {loading ? (
               <div style={{textAlign: "center", padding: "40px 0"}}>
                 <div
@@ -661,6 +669,7 @@ export default function FormParserInterface() {
                       position: "relative",
                       transform: "translateY(0)",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                      overflow: "hidden",
                     }}
                   >
                     <div
@@ -669,6 +678,8 @@ export default function FormParserInterface() {
                         alignItems: "center",
                         justifyContent: "space-between",
                         marginBottom: "8px",
+                        gap: "8px",
+                        minWidth: 0,
                       }}
                     >
                       <div
@@ -676,6 +687,7 @@ export default function FormParserInterface() {
                           display: "flex",
                           alignItems: "center",
                           gap: "8px",
+                          minWidth: 0,
                         }}
                       >
                         <div
@@ -683,6 +695,7 @@ export default function FormParserInterface() {
                             display: "flex",
                             flexDirection: "column",
                             gap: "2px",
+                            minWidth: 0,
                           }}
                         >
                           <span
@@ -690,7 +703,13 @@ export default function FormParserInterface() {
                               fontSize: "12px",
                               fontWeight: "600",
                               color: "#374151",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: "180px",
+                              display: "block",
                             }}
+                            title={field.displayName}
                           >
                             {field.displayName}
                           </span>
@@ -699,7 +718,13 @@ export default function FormParserInterface() {
                               fontSize: "10px",
                               color: "#9ca3af",
                               fontFamily: "monospace",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: "180px",
+                              display: "block",
                             }}
+                            title={field.key}
                           >
                             {field.key}
                           </span>
@@ -711,6 +736,7 @@ export default function FormParserInterface() {
                             backgroundColor: "#f3f4f6",
                             padding: "1px 4px",
                             borderRadius: "3px",
+                            flexShrink: 0,
                           }}
                         >
                           P{field.pageNumber}
@@ -721,6 +747,7 @@ export default function FormParserInterface() {
                           display: "flex",
                           alignItems: "center",
                           gap: "4px",
+                          flexShrink: 0,
                         }}
                       >
                         <span
@@ -772,12 +799,56 @@ export default function FormParserInterface() {
                         fontSize: "13px",
                         outline: "none",
                         boxSizing: "border-box",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        minWidth: 0,
+                        maxWidth: "100%",
                       }}
+                      title={field.value}
                     />
                   </div>
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Sticky Send Button - always visible at the bottom */}
+          <div
+            style={{
+              position: "sticky",
+              bottom: 0,
+              left: 0,
+              width: "90%",
+              marginTop: 5,
+              paddingTop: 4,
+              // backgroundColor: "#3b82f6",
+              padding: "16px",
+              // borderTop: "1px solid #e5e7eb",
+              zIndex: 2,
+            }}
+          >
+            <button
+              onClick={() => console.log("Send clicked:", extractedFields)}
+              style={{
+                width: "100%",
+                backgroundColor: "#3b82f6",
+                color: "white",
+                padding: "12px 0",
+                borderRadius: "6px",
+                border: "none",
+                fontSize: "16px",
+                fontWeight: "600",
+                cursor: "pointer",
+                boxShadow: "0 2px 4px rgba(16, 185, 129, 0.15)",
+                transition: "background 0.2s",
+                opacity: extractedFields.length > 0 ? 1 : 0.5,
+                pointerEvents: extractedFields.length > 0 ? "auto" : "none",
+              }}
+              disabled={extractedFields.length === 0}
+            >
+              Send
+            </button>
           </div>
         </div>
 
@@ -803,175 +874,141 @@ export default function FormParserInterface() {
             }}
           >
             {/* Zoom and Rotate Controls */}
-            <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
-              <button
-                onClick={handleZoomOut}
-                style={{
-                  padding: "6px",
-                  backgroundColor: "white",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                title="Zoom Out"
-              >
-                <ZoomOut size={16} />
-              </button>
-              <button
-                onClick={handleZoomIn}
-                style={{
-                  padding: "6px",
-                  backgroundColor: "white",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                title="Zoom In"
-              >
-                <ZoomIn size={16} />
-              </button>
-              <span
-                style={{fontSize: "14px", color: "#6b7280", margin: "0 8px"}}
-              >
-                {Math.round(scale * 100)}%
-              </span>
-
-              <div
-                style={{
-                  width: "1px",
-                  height: "20px",
-                  backgroundColor: "#d1d5db",
-                  margin: "0 4px",
-                }}
-              />
-
-              <button
-                onClick={handleRotateLeft}
-                style={{
-                  padding: "6px",
-                  backgroundColor: "white",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                title="Rotate Left"
-              >
-                <RotateCcw size={16} />
-              </button>
-              <button
-                onClick={handleRotateRight}
-                style={{
-                  padding: "6px",
-                  backgroundColor: "white",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                title="Rotate Right"
-              >
-                <RotateCw size={16} />
-              </button>
-              <button
-                onClick={handleReset}
-                style={{
-                  padding: "6px 12px",
-                  backgroundColor: "white",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  fontSize: "12px",
-                }}
-                title="Reset View"
-              >
-                <RefreshCw size={14} />
-                Reset
-              </button>
-            </div>
-
-            {/* Page Navigation */}
-            {numPages > 1 && (
-              <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
-                <button
-                  onClick={handlePrevPage}
-                  disabled={pageNumber === 1}
-                  style={{
-                    padding: "6px 12px",
-                    backgroundColor: pageNumber === 1 ? "#f3f4f6" : "white",
-                    color: pageNumber === 1 ? "#9ca3af" : "#374151",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "4px",
-                    cursor: pageNumber === 1 ? "not-allowed" : "pointer",
-                    fontSize: "14px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                  }}
+            {pdfUrl ? (
+              <>
+                <div
+                  style={{display: "flex", alignItems: "center", gap: "8px"}}
                 >
-                  <ChevronLeft size={16} />
-                  Previous
-                </button>
-                <span
-                  style={{fontSize: "14px", color: "#6b7280", padding: "0 8px"}}
+                  <button
+                    onClick={handleZoomOut}
+                    style={{
+                      padding: "6px",
+                      backgroundColor: "white",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    title="Zoom Out"
+                  >
+                    <ZoomOut size={16} />
+                  </button>
+                  <button
+                    onClick={handleZoomIn}
+                    style={{
+                      padding: "6px",
+                      backgroundColor: "white",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    title="Zoom In"
+                  >
+                    <ZoomIn size={16} />
+                  </button>
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      color: "#6b7280",
+                      margin: "0 8px",
+                    }}
+                  >
+                    {Math.round(scale * 100)}%
+                  </span>
+
+                  <div
+                    style={{
+                      width: "1px",
+                      height: "20px",
+                      backgroundColor: "#d1d5db",
+                      margin: "0 4px",
+                    }}
+                  />
+
+                  <button
+                    onClick={handleRotateLeft}
+                    style={{
+                      padding: "6px",
+                      backgroundColor: "white",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    title="Rotate Left"
+                  >
+                    <RotateCcw size={16} />
+                  </button>
+                  <button
+                    onClick={handleRotateRight}
+                    style={{
+                      padding: "6px",
+                      backgroundColor: "white",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    title="Rotate Right"
+                  >
+                    <RotateCw size={16} />
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    style={{
+                      padding: "6px 12px",
+                      backgroundColor: "white",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      fontSize: "12px",
+                    }}
+                    title="Reset View"
+                  >
+                    <RefreshCw size={14} />
+                    Reset
+                  </button>
+                </div>
+                {/* Show NEW DOCUMENT button only when pdfUrl is set */}
+                <div
+                  style={{display: "flex", alignItems: "center", gap: "8px"}}
                 >
-                  Page {pageNumber} of {numPages}
-                </span>
-                <button
-                  onClick={handleNextPage}
-                  disabled={pageNumber === numPages}
-                  style={{
-                    padding: "6px 12px",
-                    backgroundColor:
-                      pageNumber === numPages ? "#f3f4f6" : "white",
-                    color: pageNumber === numPages ? "#9ca3af" : "#374151",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "4px",
-                    cursor: pageNumber === numPages ? "not-allowed" : "pointer",
-                    fontSize: "14px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                  }}
-                >
-                  Next
-                  <ChevronRight size={16} />
-                </button>
-              </div>
+                  <button
+                    onClick={() =>
+                      document.getElementById("file-input")?.click()
+                    }
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      backgroundColor: "#3b82f6",
+                      color: "white",
+                      padding: "8px 16px",
+                      borderRadius: "6px",
+                      border: "none",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      cursor: "pointer",
+                      boxShadow: "0 2px 4px rgba(59, 130, 246, 0.2)",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <Upload size={16} />
+                    NEW DOCUMENT
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div />
             )}
-
-            <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
-              <button
-                onClick={() => document.getElementById("file-input")?.click()}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  backgroundColor: "#3b82f6",
-                  color: "white",
-                  padding: "8px 16px",
-                  borderRadius: "6px",
-                  border: "none",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 4px rgba(59, 130, 246, 0.2)",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <Upload size={16} />
-                NEW DOCUMENT
-              </button>
-            </div>
           </div>
 
           {/* PDF Content */}
