@@ -1,8 +1,9 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import {clsx, type ClassValue} from "clsx";
+import {twMerge} from "tailwind-merge";
+import {APIURL} from "./constant";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 export async function processDocumentAPI(file: File): Promise<any> {
   try {
@@ -12,18 +13,15 @@ export async function processDocumentAPI(file: File): Promise<any> {
     formData.append("extractKeyValue", "true");
     formData.append("includeRegions", "true");
 
-    const response = await fetch(
-      `https://25f80043b08a.ngrok-free.app/process-document`,
-      {
-        method: "POST",
-        body: formData,
-        // Add any headers your API requires
-        headers: {
-          // 'Authorization': 'Bearer your-token',
-          // 'X-API-Key': 'your-api-key',
-        },
-      }
-    );
+    const response = await fetch(`${APIURL}/process-document`, {
+      method: "POST",
+      body: formData,
+      // Add any headers your API requires
+      headers: {
+        // 'Authorization': 'Bearer your-token',
+        // 'X-API-Key': 'your-api-key',
+      },
+    });
     if (!response.ok) {
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
