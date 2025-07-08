@@ -13,7 +13,7 @@ export async function processDocumentAPI(file: File): Promise<any> {
     formData.append("includeRegions", "true");
 
     const response = await fetch(
-      `https://883c-182-180-99-121.ngrok-free.app/process-document`,
+      `https://25f80043b08a.ngrok-free.app/process-document`,
       {
         method: "POST",
         body: formData,

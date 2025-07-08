@@ -28,6 +28,7 @@ import {
 } from "@/lib/utils";
 import {BoundingBox, DetectedRegion, ExtractedField} from "@/lib/types";
 import {dateRegex, qtyMatchRegex} from "@/lib/constant";
+import {ShowToast} from "@/shared/showToast";
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
@@ -248,12 +249,17 @@ export default function FormParserInterface() {
 
   const pdfViewerRef = useRef<HTMLDivElement>(null);
 
+  // Refs for input fields to enable Enter-to-next navigation
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   const filteredFields = extractedFields.filter(
     (field) =>
       field.key.toLowerCase().includes(filterText.toLowerCase()) ||
       field.displayName.toLowerCase().includes(filterText.toLowerCase()) ||
       field.value.toLowerCase().includes(filterText.toLowerCase())
   );
+
+  const [sending, setSending] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -371,20 +377,26 @@ export default function FormParserInterface() {
 
   const getCurrentPageFields = getFieldsForCurrentPage();
 
-  const getProcessingStatus = () => {
-    switch (processingStep) {
-      case "upload":
-        return {text: "Ready to upload", color: "#6b7280"};
-      case "processing":
-        return {text: "Processing document...", color: "#f59e0b"};
-      case "complete":
-        return {text: "Processing complete", color: "#10b981"};
-      default:
-        return {text: "Ready", color: "#6b7280"};
+  const handleSend: any = async () => {
+    setSending(true);
+    try {
+      const res = await fetch("/api/documents", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({fields: extractedFields}),
+      });
+      const result = await res.json();
+      if (result.success) {
+        ShowToast("Data saved successfully!", "success");
+      } else {
+        ShowToast("Error: " + result.error, "error");
+      }
+    } catch (err) {
+      ShowToast(`${err || "Error occurred while saving document"}`, "error");
+    } finally {
+      setSending(false);
     }
   };
-
-  const status = getProcessingStatus();
 
   return (
     <div
@@ -417,6 +429,9 @@ export default function FormParserInterface() {
             borderRight: "1px solid #e5e7eb",
             display: "flex",
             flexDirection: "column",
+            position: "relative",
+            height: "100%",
+            overflow: "hidden",
           }}
         >
           {/* Tabs */}
@@ -525,7 +540,7 @@ export default function FormParserInterface() {
               overflowY: "auto",
               padding: "16px",
               minHeight: 0,
-              paddingBottom: 80,
+              paddingBottom: 64,
             }}
           >
             {loading ? (
@@ -806,6 +821,19 @@ export default function FormParserInterface() {
                         maxWidth: "100%",
                       }}
                       title={field.value}
+                      ref={(el) => {
+                        inputRefs.current[index] = el;
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (index < filteredFields.length - 1) {
+                            inputRefs.current[index + 1]?.focus();
+                          } else {
+                            inputRefs.current[index]?.blur();
+                          }
+                        }
+                      }}
                     />
                   </div>
                 ))}
@@ -820,16 +848,14 @@ export default function FormParserInterface() {
               bottom: 0,
               left: 0,
               width: "90%",
-              marginTop: 5,
-              paddingTop: 4,
-              // backgroundColor: "#3b82f6",
+              background: "#fff",
               padding: "16px",
               // borderTop: "1px solid #e5e7eb",
               zIndex: 2,
             }}
           >
             <button
-              onClick={() => console.log("Send clicked:", extractedFields)}
+              onClick={handleSend}
               style={{
                 width: "100%",
                 backgroundColor: "#3b82f6",
@@ -839,15 +865,42 @@ export default function FormParserInterface() {
                 border: "none",
                 fontSize: "16px",
                 fontWeight: "600",
-                cursor: "pointer",
-                boxShadow: "0 2px 4px rgba(16, 185, 129, 0.15)",
+                cursor: sending ? "not-allowed" : "pointer",
+                boxShadow: "0 2px 4px rgba(59, 130, 246, 0.10)",
                 transition: "background 0.2s",
                 opacity: extractedFields.length > 0 ? 1 : 0.5,
-                pointerEvents: extractedFields.length > 0 ? "auto" : "none",
+                pointerEvents:
+                  extractedFields.length > 0 && !sending ? "auto" : "none",
+                position: "relative",
               }}
-              disabled={extractedFields.length === 0}
+              disabled={extractedFields.length === 0 || sending}
             >
-              Send
+              {sending ? (
+                <span
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span
+                    className="spinner"
+                    style={{
+                      width: 18,
+                      height: 18,
+                      border: "3px solid #fff",
+                      borderTop: "3px solid #3b82f6",
+                      borderRadius: "50%",
+                      display: "inline-block",
+                      animation: "spin 1s linear infinite",
+                    }}
+                  />
+                  Sending...
+                </span>
+              ) : (
+                "Send"
+              )}
             </button>
           </div>
         </div>
@@ -867,7 +920,7 @@ export default function FormParserInterface() {
             style={{
               padding: "12px 16px",
               backgroundColor: "white",
-              borderBottom: "1px solid #e5e7eb",
+              // borderBottom: "1px solid #e5e7eb",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -1051,7 +1104,7 @@ export default function FormParserInterface() {
                             width: "40px",
                             height: "40px",
                             border: "3px solid #f3f4f6",
-                            borderTop: "3px solid #3b82f6",
+                            // borderTop: "3px solid #3b82f6",
                             borderRadius: "50%",
                             animation: "spin 1s linear infinite",
                             margin: "0 auto 16px",
@@ -1097,7 +1150,7 @@ export default function FormParserInterface() {
                 >
                   Upload a document to begin
                 </h3>
-                <p
+                {/* <p
                   style={{
                     fontSize: "14px",
                     color: "#6b7280",
@@ -1106,7 +1159,7 @@ export default function FormParserInterface() {
                 >
                   Your API will extract coordinates and key-value pairs
                   automatically
-                </p>
+                </p> */}
                 <button
                   onClick={() => document.getElementById("file-input")?.click()}
                   style={{
