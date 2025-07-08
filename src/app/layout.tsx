@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: "PDF Data Extractor - Phifer Consulting",
   description:
     "Professional PDF document processing and data extraction platform",
+  // icons: {
+  //   icon: "/logo1.jpg",
+  // },
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
