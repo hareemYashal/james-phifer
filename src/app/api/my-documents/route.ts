@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const body = await req.json();
-    if (!body.fields || !Array.isArray(body.fields)) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
-    }
-
     const authHeader = req.headers.get("Authorization");
     const token = authHeader?.split(" ")[1];
 
@@ -45,17 +40,20 @@ export async function POST(req: NextRequest) {
 
     const labId = userLab.lab_id;
 
-    const { error: insertError, data: documentData } = await supabase
+    const { data: documents, error: documentsError } = await supabase
       .from("documents")
-      .insert([{ data: body.fields, lab_id: labId, uploaded_by: user.user.id }])
-      .select();
+      .select("*")
+      .eq("lab_id", labId);
 
-    if (insertError) {
-      console.error("Supabase error:", insertError);
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+    if (documentsError) {
+      console.error("Supabase documents error:", documentsError);
+      return NextResponse.json(
+        { error: "Failed to fetch documents" },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ success: true, document: documentData[0] });
+    return NextResponse.json({ success: true, documents });
   } catch (err: any) {
     console.error("API route error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });

@@ -1,6 +1,6 @@
-import {clsx, type ClassValue} from "clsx";
-import {twMerge} from "tailwind-merge";
-import {APIURL} from "./constant";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+import { APIURL } from "./constant";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -50,8 +50,8 @@ export function toDatabaseKey(displayName: string): string {
 // Enhanced function to extract key-value pairs from full text
 export function extractKeyValuePairsFromText(
   text: string
-): Array<{key: string; value: string}> {
-  const pairs: Array<{key: string; value: string}> = [];
+): Array<{ key: string; value: string }> {
+  const pairs: Array<{ key: string; value: string }> = [];
 
   // Split text into lines and look for patterns
   const lines = text.split("\n").filter((line) => line.trim().length > 0);
@@ -68,24 +68,24 @@ export function extractKeyValuePairsFromText(
       const key = colonMatch[1].trim();
       const value = colonMatch[2].trim();
       if (key.length > 1 && value.length > 0 && !isCommonWord(key)) {
-        pairs.push({key, value});
+        pairs.push({ key, value });
       }
     }
 
     // Look for invoice-specific patterns
     const invoiceNumberMatch = line.match(/Invoice\s+number\s+([A-Z0-9-]+)/i);
     if (invoiceNumberMatch) {
-      pairs.push({key: "Invoice Number", value: invoiceNumberMatch[1]});
+      pairs.push({ key: "Invoice Number", value: invoiceNumberMatch[1] });
     }
 
     const dateMatch = line.match(/Date\s+of\s+issue\s+(.+)/i);
     if (dateMatch) {
-      pairs.push({key: "Date of Issue", value: dateMatch[1].trim()});
+      pairs.push({ key: "Date of Issue", value: dateMatch[1].trim() });
     }
 
     const dueDateMatch = line.match(/Date\s+due\s+(.+)/i);
     if (dueDateMatch) {
-      pairs.push({key: "Date Due", value: dueDateMatch[1].trim()});
+      pairs.push({ key: "Date Due", value: dueDateMatch[1].trim() });
     }
 
     // Look for amounts
@@ -93,13 +93,13 @@ export function extractKeyValuePairsFromText(
     if (amountMatch) {
       amountMatch.forEach((amount, index) => {
         if (line.toLowerCase().includes("total")) {
-          pairs.push({key: "Total Amount", value: amount});
+          pairs.push({ key: "Tonttal Amou", value: amount });
         } else if (line.toLowerCase().includes("subtotal")) {
-          pairs.push({key: "Subtotal", value: amount});
+          pairs.push({ key: "Subtotal", value: amount });
         } else if (line.toLowerCase().includes("due")) {
-          pairs.push({key: "Amount Due", value: amount});
+          pairs.push({ key: "Amount Due", value: amount });
         } else {
-          pairs.push({key: `Amount ${index + 1}`, value: amount});
+          pairs.push({ key: `Amount ${index + 1}`, value: amount });
         }
       });
     }
@@ -111,13 +111,13 @@ export function extractKeyValuePairsFromText(
         /\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Boulevard|Blvd)/i
       )
     ) {
-      pairs.push({key: "Address", value: line});
+      pairs.push({ key: "Address", value: line });
     }
 
     // Look for phone numbers
     const phoneMatch = line.match(/(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})/);
     if (phoneMatch) {
-      pairs.push({key: "Phone Number", value: phoneMatch[1]});
+      pairs.push({ key: "Phone Number", value: phoneMatch[1] });
     }
 
     // Look for email addresses
@@ -125,7 +125,7 @@ export function extractKeyValuePairsFromText(
       /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/
     );
     if (emailMatch) {
-      pairs.push({key: "Email Address", value: emailMatch[1]});
+      pairs.push({ key: "Email Address", value: emailMatch[1] });
     }
 
     // Look for dates in various formats
@@ -136,7 +136,7 @@ export function extractKeyValuePairsFromText(
       generalDateMatch &&
       !pairs.some((p) => p.value === generalDateMatch[1])
     ) {
-      pairs.push({key: "Date", value: generalDateMatch[1]});
+      pairs.push({ key: "Date", value: generalDateMatch[1] });
     }
   }
 
@@ -160,7 +160,7 @@ export function extractKeyValuePairsFromText(
         !nextLine.match(/^\d/) &&
         !pairs.some((p) => p.key === currentLine || p.value === nextLine)
       ) {
-        pairs.push({key: currentLine, value: nextLine});
+        pairs.push({ key: currentLine, value: nextLine });
       }
     }
   }

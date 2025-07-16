@@ -1,8 +1,8 @@
 "use client";
 
 import type React from "react";
-import {useState, useRef} from "react";
-import {Document, Page as PDFPage, pdfjs} from "react-pdf";
+import { useState, useRef } from "react";
+import { Document, Page as PDFPage, pdfjs } from "react-pdf";
 import {
   Upload,
   Filter,
@@ -26,9 +26,10 @@ import {
   processDocumentAPI,
   toDatabaseKey,
 } from "@/lib/utils";
-import {BoundingBox, DetectedRegion, ExtractedField} from "@/lib/types";
-import {dateRegex, qtyMatchRegex} from "@/lib/constant";
-import {ShowToast} from "@/shared/showToast";
+import { BoundingBox, DetectedRegion, ExtractedField } from "@/lib/types";
+import { dateRegex, qtyMatchRegex } from "@/lib/constant";
+import { ShowToast } from "@/shared/showToast";
+import EditableTable from "../table";
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
@@ -47,14 +48,19 @@ function parseAPIResponse(apiData: any): {
     if (apiData.pages && Array.isArray(apiData.pages)) {
       apiData.pages.forEach((page: any, pageIndex: number) => {
         const pageNumber = page.page_number || pageIndex + 1;
-        const pageDimensions = page.dimensions || {width: 1, height: 1};
+        const pageDimensions = page.dimensions || { width: 1, height: 1 };
 
         if (page.tokens && Array.isArray(page.tokens)) {
           page.tokens.forEach((token: any, tokenIndex: number) => {
             // Process tokens with non-empty text
             if (token.text && token.text.trim() !== "") {
               // Convert bounding box format
-              let coordinates: BoundingBox = {x: 0, y: 0, width: 0, height: 0};
+              let coordinates: BoundingBox = {
+                x: 0,
+                y: 0,
+                width: 0,
+                height: 0,
+              };
 
               if (
                 token.bounding_box &&
@@ -101,7 +107,7 @@ function parseAPIResponse(apiData: any): {
           displayName: pair.key,
           value: pair.value,
           confidence: 0.9, // High confidence for text-extracted pairs
-          coordinates: {x: 0, y: 0, width: 0, height: 0}, // No specific coordinates for text extraction
+          coordinates: { x: 0, y: 0, width: 0, height: 0 }, // No specific coordinates for text extraction
           category: categorizeText(pair.key),
           pageNumber: 1,
           regionId: `region_text_${index}`,
@@ -120,7 +126,7 @@ function parseAPIResponse(apiData: any): {
           displayName: field.key,
           value: field.value,
           confidence: 0.8,
-          coordinates: {x: 0, y: 0, width: 0, height: 0},
+          coordinates: { x: 0, y: 0, width: 0, height: 0 },
           category: categorizeText(field.key),
           pageNumber: 1,
           regionId: `region_structured_${index}`,
@@ -131,14 +137,14 @@ function parseAPIResponse(apiData: any): {
     console.error("Error parsing OCR API response:", error);
   }
 
-  return {regions, fields};
+  return { regions, fields };
 }
 
 // Additional function to extract structured data from invoice-like documents
 function extractStructuredData(
   text: string
-): Array<{key: string; value: string}> {
-  const fields: Array<{key: string; value: string}> = [];
+): Array<{ key: string; value: string }> {
+  const fields: Array<{ key: string; value: string }> = [];
   const lines = text
     .split("\n")
     .map((line) => line.trim())
@@ -155,7 +161,7 @@ function extractStructuredData(
       !line.toLowerCase().includes("invoice") &&
       !line.toLowerCase().includes("date")
     ) {
-      fields.push({key: "Company Name", value: line});
+      fields.push({ key: "Company Name", value: line });
     }
   });
 
@@ -170,16 +176,16 @@ function extractStructuredData(
     );
 
     if (context.toLowerCase().includes("subtotal")) {
-      fields.push({key: "Subtotal", value: amount});
+      fields.push({ key: "Subtotal", value: amount });
     } else if (
       context.toLowerCase().includes("total") &&
       !context.toLowerCase().includes("subtotal")
     ) {
-      fields.push({key: "Total", value: amount});
+      fields.push({ key: "Total", value: amount });
     } else if (context.toLowerCase().includes("due")) {
-      fields.push({key: "Amount Due", value: amount});
+      fields.push({ key: "Amount Due", value: amount });
     } else if (context.toLowerCase().includes("balance")) {
-      fields.push({key: "Applied Balance", value: amount});
+      fields.push({ key: "Applied Balance", value: amount });
     }
   }
 
@@ -193,11 +199,11 @@ function extractStructuredData(
     );
 
     if (context.toLowerCase().includes("due")) {
-      fields.push({key: "Due Date", value: date});
+      fields.push({ key: "Due Date", value: date });
     } else if (context.toLowerCase().includes("issue")) {
-      fields.push({key: "Issue Date", value: date});
+      fields.push({ key: "Issue Date", value: date });
     } else {
-      fields.push({key: "Date", value: date});
+      fields.push({ key: "Date", value: date });
     }
   }
 
@@ -209,14 +215,14 @@ function extractStructuredData(
 
       // Check if this looks like a product/service description
       if (line.match(/\b(Standard|Premium|Remaining|Unused)\b/i)) {
-        fields.push({key: "Service Description", value: line});
+        fields.push({ key: "Service Description", value: line });
       }
 
       // Look for quantity patterns
       const qtyMatch = line.match(qtyMatchRegex);
       if (qtyMatch) {
-        fields.push({key: "Quantity", value: qtyMatch[1]});
-        fields.push({key: "Item", value: qtyMatch[2].trim()});
+        fields.push({ key: "Quantity", value: qtyMatch[1] });
+        fields.push({ key: "Item", value: qtyMatch[2].trim() });
       }
     }
   });
@@ -246,6 +252,15 @@ export default function FormParserInterface() {
   const [extractedFields, setExtractedFields] = useState<ExtractedField[]>([]);
   const [processingTime, setProcessingTime] = useState<number | null>(null);
   const [apiResponse, setApiResponse] = useState<any>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+
+  const [dragStart, setDragStart] = useState<{
+    x: number;
+    y: number;
+    scrollLeft: number;
+    scrollTop: number;
+  } | null>(null);
 
   const pdfViewerRef = useRef<HTMLDivElement>(null);
 
@@ -258,6 +273,39 @@ export default function FormParserInterface() {
       field.displayName.toLowerCase().includes(filterText.toLowerCase()) ||
       field.value.toLowerCase().includes(filterText.toLowerCase())
   );
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!pdfViewerRef.current) return;
+
+    // Enable dragging
+    setIsDragging(true);
+
+    // Store the initial mouse position and scroll position
+    setDragStart({
+      x: e.clientX,
+      y: e.clientY,
+      scrollLeft: pdfViewerRef.current.scrollLeft,
+      scrollTop: pdfViewerRef.current.scrollTop,
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !dragStart || !pdfViewerRef.current) return;
+
+    // Calculate the distance moved
+    const deltaX = e.clientX - dragStart.x;
+    const deltaY = e.clientY - dragStart.y;
+
+    // Scroll the container
+    pdfViewerRef.current.scrollLeft = dragStart.scrollLeft - deltaX;
+    pdfViewerRef.current.scrollTop = dragStart.scrollTop - deltaY;
+  };
+
+  const handleMouseUp = () => {
+    // Disable dragging
+    setIsDragging(false);
+    setDragStart(null);
+  };
 
   const [sending, setSending] = useState(false);
 
@@ -303,7 +351,7 @@ export default function FormParserInterface() {
         setApiResponse(result);
 
         // Parse the response to extract regions and fields
-        const {regions, fields} = parseAPIResponse(result);
+        const { regions, fields } = parseAPIResponse(result);
 
         setDetectedRegions(regions);
         setExtractedFields(fields);
@@ -341,7 +389,7 @@ export default function FormParserInterface() {
     );
     setExtractedFields((prev) =>
       prev.map((field, idx) =>
-        idx === actualIndex ? {...field, value} : field
+        idx === actualIndex ? { ...field, value } : field
       )
     );
   };
@@ -380,10 +428,15 @@ export default function FormParserInterface() {
   const handleSend: any = async () => {
     setSending(true);
     try {
+      const token = localStorage.getItem("access_token");
+
       const res = await fetch("/api/documents", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({fields: extractedFields}),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ fields: extractedFields }),
       });
       const result = await res.json();
       if (result.success) {
@@ -401,509 +454,342 @@ export default function FormParserInterface() {
   return (
     <div
       style={{
-        height: "100vh",
+        height: "85vh",
         backgroundColor: "#f8fafc",
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
-      {/* Header */}
       <div
         style={{
-          backgroundColor: "white",
-          borderBottom: "1px solid #e5e7eb",
-          padding: "12px 24px",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          flexDirection: "row",
+          height: "calc(90vh - 60px)",
         }}
       >
-        <Header />
-      </div>
-
-      <div style={{display: "flex", height: "calc(100vh - 60px)"}}>
         {/* Left Panel - Form Fields */}
-        <div
-          style={{
-            width: "400px",
-            backgroundColor: "white",
-            borderRight: "1px solid #e5e7eb",
-            display: "flex",
-            flexDirection: "column",
-            position: "relative",
-            height: "100%",
-            overflow: "hidden",
-          }}
-        >
-          {/* Tabs */}
+        {!isPanelCollapsed && (
           <div
             style={{
+              width: "30%",
+              backgroundColor: "white",
+              borderRight: "1px solid #e5e7eb",
               display: "flex",
-              backgroundColor: "#f8fafc",
+              flexDirection: "column",
+              // position: "relative",
+              height: "100%",
+              overflow: "hidden",
             }}
           >
-            {[{key: "keyvalue", label: "KEY VALUE PAIR"}].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
-                style={{
-                  padding: "12px 16px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  color: activeTab === tab.key ? "#3b82f6" : "#6b7280",
-                  backgroundColor:
-                    activeTab === tab.key ? "white" : "transparent",
-                  border: "none",
-                  borderBottom:
-                    activeTab === tab.key ? "2px solid #3b82f6" : "none",
-                  cursor: "pointer",
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Filter and Controls */}
-          <div
-            style={{
-              padding: "16px",
-              borderBottom: "1px solid #e5e7eb",
-              backgroundColor: "#f8fafc",
-            }}
-          >
+            {/* Tabs */}
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginBottom: "12px",
+                backgroundColor: "#f8fafc",
               }}
             >
-              <Filter size={16} style={{color: "#6b7280"}} />
-              <span
-                style={{fontSize: "14px", fontWeight: "500", color: "#374151"}}
-              >
-                Filter
-              </span>
-              <span style={{fontSize: "12px", color: "#6b7280"}}>
-                Type to filter
-              </span>
+              {[{ key: "keyvalue", label: "KEY VALUE PAIR" }].map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key as any)}
+                  style={{
+                    padding: "12px 16px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    color: activeTab === tab.key ? "#3b82f6" : "#6b7280",
+                    backgroundColor:
+                      activeTab === tab.key ? "white" : "transparent",
+                    border: "none",
+                    borderBottom:
+                      activeTab === tab.key ? "2px solid #3b82f6" : "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
-            <div style={{position: "relative"}}>
-              <Search
-                size={16}
-                style={{
-                  position: "absolute",
-                  left: "12px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "#9ca3af",
-                }}
-              />
-              <input
-                type="text"
-                placeholder="Search fields..."
-                value={filterText}
-                onChange={(e) => setFilterText(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "8px 12px 8px 36px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-
+            {/* Filter and Controls */}
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                marginTop: "12px",
+                padding: "16px",
+                borderBottom: "1px solid #e5e7eb",
+                backgroundColor: "#f8fafc",
               }}
             >
-              <span style={{fontSize: "12px", color: "#6b7280"}}>
-                {filteredFields.length} total fields •{" "}
-                {getCurrentPageFields.length} on page {pageNumber}
-              </span>
-            </div>
-          </div>
+              <div style={{ position: "relative" }}>
+                <Search
+                  size={16}
+                  style={{
+                    position: "absolute",
+                    left: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#9ca3af",
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search fields..."
+                  value={filterText}
+                  onChange={(e) => setFilterText(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px 8px 36px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
 
-          {/* Fields List */}
-          <div
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: "16px",
-              minHeight: 0,
-              paddingBottom: 64,
-            }}
-          >
-            {loading ? (
-              <div style={{textAlign: "center", padding: "40px 0"}}>
-                <div
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    border: "3px solid #f3f4f6",
-                    borderTop: "3px solid #3b82f6",
-                    borderRadius: "50%",
-                    animation: "spin 1s linear infinite",
-                    margin: "0 auto 16px",
-                  }}
-                />
-                <p style={{color: "#6b7280", fontSize: "14px"}}>
-                  Processing document with your API...
-                </p>
-                <p style={{color: "#9ca3af", fontSize: "12px"}}>
-                  Extracting coordinates and key-value pairs
-                </p>
-              </div>
-            ) : error ? (
-              <div style={{textAlign: "center", padding: "40px 0"}}>
-                <AlertCircle
-                  size={48}
-                  style={{color: "#ef4444", marginBottom: "16px"}}
-                />
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    color: "#ef4444",
-                    margin: "0 0 8px 0",
-                  }}
-                >
-                  API Processing Error
-                </h3>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#6b7280",
-                    margin: "0 0 20px 0",
-                  }}
-                >
-                  {error}
-                </p>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    justifyContent: "center",
-                  }}
-                >
-                  <button
-                    onClick={handleRetryProcessing}
-                    style={{
-                      backgroundColor: "#3b82f6",
-                      color: "white",
-                      padding: "8px 16px",
-                      borderRadius: "6px",
-                      border: "none",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                    }}
-                  >
-                    <Zap size={14} />
-                    Retry API Call
-                  </button>
-                  <button
-                    onClick={() => {
-                      setError(null);
-                      setFile(null);
-                      setPdfUrl(null);
-                      setExtractedFields([]);
-                      setDetectedRegions([]);
-                      setProcessingStep("upload");
-                    }}
-                    style={{
-                      backgroundColor: "#ef4444",
-                      color: "white",
-                      padding: "8px 16px",
-                      borderRadius: "6px",
-                      border: "none",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Start Over
-                  </button>
-                </div>
-              </div>
-            ) : extractedFields.length === 0 ? (
-              <div style={{textAlign: "center", padding: "40px 0"}}>
-                <FileText
-                  size={48}
-                  style={{color: "#9ca3af", marginBottom: "16px"}}
-                />
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    color: "#374151",
-                    margin: "0 0 8px 0",
-                  }}
-                >
-                  {processingStep === "upload"
-                    ? "No Document Uploaded"
-                    : "No Fields Extracted"}
-                </h3>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#6b7280",
-                    margin: "0",
-                  }}
-                >
-                  {processingStep === "upload"
-                    ? "Upload a document to begin processing"
-                    : `${detectedRegions.length} regions detected, but no key-value pairs extracted`}
-                </p>
-              </div>
-            ) : (
               <div
-                style={{display: "flex", flexDirection: "column", gap: "12px"}}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginTop: "12px",
+                }}
               >
-                {filteredFields.map((field, index) => (
-                  <div
-                    key={`${field.id}-${index}`}
-                    style={{
-                      padding: "12px",
-                      backgroundColor: "white",
-                      border: "2px solid #e5e7eb",
-                      borderRadius: "6px",
-                      transition: "all 0.2s ease",
-                      position: "relative",
-                      transform: "translateY(0)",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: "8px",
-                        gap: "8px",
-                        minWidth: 0,
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          minWidth: 0,
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "2px",
-                            minWidth: 0,
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: "12px",
-                              fontWeight: "600",
-                              color: "#374151",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              maxWidth: "180px",
-                              display: "block",
-                            }}
-                            title={field.displayName}
-                          >
-                            {field.displayName}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "10px",
-                              color: "#9ca3af",
-                              fontFamily: "monospace",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              maxWidth: "180px",
-                              display: "block",
-                            }}
-                            title={field.key}
-                          >
-                            {field.key}
-                          </span>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: "10px",
-                            color: "#9ca3af",
-                            backgroundColor: "#f3f4f6",
-                            padding: "1px 4px",
-                            borderRadius: "3px",
-                            flexShrink: 0,
-                          }}
-                        >
-                          P{field.pageNumber}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: "10px",
-                            color: "#6b7280",
-                            backgroundColor: "#f3f4f6",
-                            padding: "2px 6px",
-                            borderRadius: "4px",
-                          }}
-                        >
-                          {Math.round(field.confidence * 100)}%
-                        </span>
-                        <button
-                          onClick={() => removeField(index)}
-                          style={{
-                            padding: "4px",
-                            backgroundColor: "transparent",
-                            border: "none",
-                            cursor: "pointer",
-                            color: "#ef4444",
-                            borderRadius: "3px",
-                            transition: "all 0.2s ease",
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.backgroundColor = "#fef2f2";
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              "transparent";
-                          }}
-                          title="Remove field"
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <input
-                      type="text"
-                      value={field.value}
-                      onChange={(e) => handleFieldChange(index, e.target.value)}
-                      placeholder="Enter value..."
-                      style={{
-                        width: "100%",
-                        padding: "8px 12px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "4px",
-                        fontSize: "13px",
-                        outline: "none",
-                        boxSizing: "border-box",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        minWidth: 0,
-                        maxWidth: "100%",
-                      }}
-                      title={field.value}
-                      ref={(el) => {
-                        inputRefs.current[index] = el;
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          if (index < filteredFields.length - 1) {
-                            inputRefs.current[index + 1]?.focus();
-                          } else {
-                            inputRefs.current[index]?.blur();
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                ))}
+                <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                  {filteredFields.length} total fields •{" "}
+                  {getCurrentPageFields.length} on page {pageNumber}
+                </span>
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Sticky Send Button - always visible at the bottom */}
-          <div
-            style={{
-              position: "sticky",
-              bottom: 0,
-              left: 0,
-              width: "90%",
-              background: "#fff",
-              padding: "16px",
-              // borderTop: "1px solid #e5e7eb",
-              zIndex: 2,
-            }}
-          >
-            <button
-              onClick={handleSend}
+            {/* Fields List */}
+            <div
               style={{
-                width: "100%",
-                backgroundColor: "#3b82f6",
-                color: "white",
-                padding: "12px 0",
-                borderRadius: "6px",
-                border: "none",
-                fontSize: "16px",
-                fontWeight: "600",
-                cursor: sending ? "not-allowed" : "pointer",
-                boxShadow: "0 2px 4px rgba(59, 130, 246, 0.10)",
-                transition: "background 0.2s",
-                opacity: extractedFields.length > 0 ? 1 : 0.5,
-                pointerEvents:
-                  extractedFields.length > 0 && !sending ? "auto" : "none",
-                position: "relative",
+                padding: "16px",
+                minHeight: 0,
+                paddingBottom: 64,
               }}
-              disabled={extractedFields.length === 0 || sending}
             >
-              {sending ? (
-                <span
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                  }}
-                >
-                  <span
-                    className="spinner"
+              {loading ? (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <div
                     style={{
-                      width: 18,
-                      height: 18,
-                      border: "3px solid #fff",
+                      width: "40px",
+                      height: "40px",
+                      border: "3px solid #f3f4f6",
                       borderTop: "3px solid #3b82f6",
                       borderRadius: "50%",
-                      display: "inline-block",
                       animation: "spin 1s linear infinite",
+                      margin: "0 auto 16px",
                     }}
                   />
-                  Sending...
-                </span>
+                  <p style={{ color: "#6b7280", fontSize: "14px" }}>
+                    Processing document with your API...
+                  </p>
+                  <p style={{ color: "#9ca3af", fontSize: "12px" }}>
+                    Extracting coordinates and key-value pairs
+                  </p>
+                </div>
+              ) : error ? (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <AlertCircle
+                    size={48}
+                    style={{ color: "#ef4444", marginBottom: "16px" }}
+                  />
+                  <h3
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      color: "#ef4444",
+                      margin: "0 0 8px 0",
+                    }}
+                  >
+                    API Processing Error
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      color: "#6b7280",
+                      margin: "0 0 20px 0",
+                    }}
+                  >
+                    {error}
+                  </p>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <button
+                      onClick={handleRetryProcessing}
+                      style={{
+                        backgroundColor: "#3b82f6",
+                        color: "white",
+                        padding: "8px 16px",
+                        borderRadius: "6px",
+                        border: "none",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      <Zap size={14} />
+                      Retry API Call
+                    </button>
+                    <button
+                      onClick={() => {
+                        setError(null);
+                        setFile(null);
+                        setPdfUrl(null);
+                        setExtractedFields([]);
+                        setDetectedRegions([]);
+                        setProcessingStep("upload");
+                      }}
+                      style={{
+                        backgroundColor: "#ef4444",
+                        color: "white",
+                        padding: "8px 16px",
+                        borderRadius: "6px",
+                        border: "none",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Start Over
+                    </button>
+                  </div>
+                </div>
+              ) : extractedFields.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <FileText
+                    size={48}
+                    style={{ color: "#9ca3af", marginBottom: "16px" }}
+                  />
+                  <h3
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      color: "#374151",
+                      margin: "0 0 8px 0",
+                    }}
+                  >
+                    {processingStep === "upload"
+                      ? "No Document Uploaded"
+                      : "No Fields Extracted"}
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      color: "#6b7280",
+                      margin: "0",
+                    }}
+                  >
+                    {processingStep === "upload"
+                      ? "Upload a document to begin processing"
+                      : `${detectedRegions.length} regions detected, but no key-value pairs extracted`}
+                  </p>
+                </div>
               ) : (
-                "Send"
+                <EditableTable
+                  fields={filteredFields}
+                  onFieldChange={handleFieldChange}
+                  onRemoveField={removeField}
+                />
               )}
-            </button>
+            </div>
+
+            {/* Sticky Send Button - always visible at the bottom */}
+            <div
+              style={{
+                position: "sticky",
+                bottom: 0,
+                left: 0,
+                width: "90%",
+                background: "#fff",
+                padding: "16px",
+                // borderTop: "1px solid #e5e7eb",
+                zIndex: 2,
+              }}
+            >
+              <button
+                onClick={handleSend}
+                style={{
+                  width: "100%",
+                  backgroundColor: "#3b82f6",
+                  color: "white",
+                  padding: "12px 0",
+                  borderRadius: "6px",
+                  border: "none",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  cursor: sending ? "not-allowed" : "pointer",
+                  boxShadow: "0 2px 4px rgba(59, 130, 246, 0.10)",
+                  transition: "background 0.2s",
+                  opacity: extractedFields.length > 0 ? 1 : 0.5,
+                  pointerEvents:
+                    extractedFields.length > 0 && !sending ? "auto" : "none",
+                  position: "relative",
+                }}
+                disabled={extractedFields.length === 0 || sending}
+              >
+                {sending ? (
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <span
+                      className="spinner"
+                      style={{
+                        width: 18,
+                        height: 18,
+                        border: "3px solid #fff",
+                        borderTop: "3px solid #3b82f6",
+                        borderRadius: "50%",
+                        display: "inline-block",
+                        animation: "spin 1s linear infinite",
+                      }}
+                    />
+                    Sending...
+                  </span>
+                ) : (
+                  "Send"
+                )}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+        <button
+          onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
+          style={{
+            position: "absolute",
+            left: isPanelCollapsed ? "20px" : "29.5%",
+            zIndex: 10,
+            marginTop: "60px",
+            backgroundColor: "#3b82f6",
+            color: "white",
+            padding: "5px 7px",
+            borderRadius: "100%",
+            border: "none",
+            fontSize: "14px",
+            fontWeight: "500",
+            cursor: "pointer",
+            transition: "left 0.3s",
+          }}
+        >
+          {isPanelCollapsed ? (
+            <ChevronRight size={16} />
+          ) : (
+            <ChevronLeft size={16} />
+          )}
+        </button>
 
         {/* Right Panel - PDF Viewer */}
         <div
@@ -913,6 +799,7 @@ export default function FormParserInterface() {
             display: "flex",
             flexDirection: "column",
             position: "relative",
+            maxWidth: isPanelCollapsed ? "100%" : "70%",
           }}
         >
           {/* PDF Controls */}
@@ -930,7 +817,7 @@ export default function FormParserInterface() {
             {pdfUrl ? (
               <>
                 <div
-                  style={{display: "flex", alignItems: "center", gap: "8px"}}
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
                 >
                   <button
                     onClick={handleZoomOut}
@@ -1032,7 +919,7 @@ export default function FormParserInterface() {
                 </div>
                 {/* Show NEW DOCUMENT button only when pdfUrl is set */}
                 <div
-                  style={{display: "flex", alignItems: "center", gap: "8px"}}
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
                 >
                   <button
                     onClick={() =>
@@ -1073,6 +960,7 @@ export default function FormParserInterface() {
               justifyContent: "center",
               padding: "20px",
               position: "relative",
+              overflow: "hidden", // Prevent content from overflowing
             }}
           >
             <input
@@ -1080,25 +968,41 @@ export default function FormParserInterface() {
               type="file"
               accept="application/pdf"
               onChange={handleFileChange}
-              style={{display: "none"}}
+              style={{ display: "none" }}
             />
 
             {pdfUrl ? (
               <div
-                ref={pdfViewerRef}
                 style={{
                   position: "relative",
                   boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
                   borderRadius: "8px",
-                  overflow: "visible",
+                  overflow: "hidden",
+                  width: "100%",
+                  height: "100%",
+                  maxWidth: "800px",
+                  maxHeight: "100%",
                 }}
               >
-                <div style={{position: "relative"}}>
+                <div
+                  ref={pdfViewerRef}
+                  style={{
+                    position: "relative",
+                    overflow: "auto",
+                    width: "100%",
+                    height: "100%",
+                    cursor: isDragging ? "grabbing" : "grab", // Change cursor during drag
+                  }}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp} // Stop dragging if the mouse leaves the container
+                >
                   <Document
                     file={pdfUrl}
-                    onLoadSuccess={({numPages}) => setNumPages(numPages)}
+                    onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                     loading={
-                      <div style={{padding: "40px", textAlign: "center"}}>
+                      <div style={{ padding: "40px", textAlign: "center" }}>
                         <div
                           style={{
                             width: "40px",
@@ -1110,7 +1014,7 @@ export default function FormParserInterface() {
                             margin: "0 auto 16px",
                           }}
                         />
-                        <p style={{color: "#6b7280", fontSize: "14px"}}>
+                        <p style={{ color: "#6b7280", fontSize: "14px" }}>
                           Loading PDF...
                         </p>
                       </div>
@@ -1138,7 +1042,7 @@ export default function FormParserInterface() {
               >
                 <Upload
                   size={48}
-                  style={{color: "#9ca3af", marginBottom: "16px"}}
+                  style={{ color: "#9ca3af", marginBottom: "16px" }}
                 />
                 <h3
                   style={{
