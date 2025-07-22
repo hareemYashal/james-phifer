@@ -4,12 +4,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { ShowToast } from "./showToast";
+import { useUserContext } from "@/context/user-context";
 
 interface HeaderProps {
   username: string;
   profile_image_uri?: string;
   handleMyDocuments?: () => void;
   myDocumentsButtonText?: string;
+  showUserManagementButton?: boolean;
+  handleUserManagement?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -17,7 +20,10 @@ const Header: React.FC<HeaderProps> = ({
   profile_image_uri,
   handleMyDocuments,
   myDocumentsButtonText,
+  handleUserManagement,
+  showUserManagementButton = false,
 }) => {
+  const { role } = useUserContext();
   const router = useRouter();
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
@@ -144,6 +150,32 @@ const Header: React.FC<HeaderProps> = ({
               >
                 {myDocumentsButtonText || "Lab Documents"}
               </button>
+
+              {showUserManagementButton && (
+                <button
+                  onClick={handleUserManagement}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "10px 16px",
+                    textAlign: "left",
+                    backgroundColor: "white",
+                    border: "none",
+                    fontSize: "14px",
+                    color: "#374151",
+                    cursor: "pointer",
+                    transition: "background-color 0.2s ease",
+                  }}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#f3f4f6")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.backgroundColor = "white")
+                  }
+                >
+                  User Management
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 style={{

@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     if (error || !user) {
       console.error("Supabase error:", error);
       return NextResponse.json(
-        { error: "Failed to fetch user details" },
+        { error: error || "Failed to fetch user details" },
         { status: 401 }
       );
     }

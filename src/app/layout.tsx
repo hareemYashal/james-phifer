@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import AuthCheck from "@/lib/auth";
+import { RoleProvider } from "@/context/user-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,7 +25,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthCheck>{children}</AuthCheck>
+        <RoleProvider>
+          <AuthCheck>{children}</AuthCheck>
+        </RoleProvider>
+
         <Toaster position="top-center" />
       </body>
     </html>

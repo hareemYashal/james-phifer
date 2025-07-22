@@ -1,13 +1,13 @@
 import React from "react";
 
-function Loader() {
+function Loader({ height = "100vh" }: { height?: string }) {
   return (
     <div
       style={{
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        height: "100vh",
+        height: height || "100vh",
         backgroundColor: "#f8fafc",
       }}
     >

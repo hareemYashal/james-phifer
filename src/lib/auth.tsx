@@ -5,8 +5,10 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { ShowToast } from "@/shared/showToast";
+import { useUserContext } from "@/context/user-context";
 
 const AuthCheck = ({ children }: { children: React.ReactNode }) => {
+  const { setRole, setUser } = useUserContext();
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -21,6 +23,7 @@ const AuthCheck = ({ children }: { children: React.ReactNode }) => {
           if (session?.user) {
             const userEmail = session.user.email;
 
+            setUser(session?.user || null);
             try {
               const { data: userData, error: userError } = await supabase
                 .from("users_lab")
@@ -34,6 +37,7 @@ const AuthCheck = ({ children }: { children: React.ReactNode }) => {
                 router.push("/login");
                 return;
               }
+              setRole(userData.role);
               localStorage.setItem("access_token", session.access_token);
               router.push("/pdf-viewer");
             } catch (err) {

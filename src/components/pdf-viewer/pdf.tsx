@@ -7,6 +7,9 @@ import Header from "@/shared/header";
 import Loader from "../ui/loader";
 import DocumentsViewer from "./documents-viewer";
 import { Document } from "@/types";
+import { useUserContext } from "@/context/user-context";
+import { useRouter } from "next/navigation";
+import UserManagement from "../user-management";
 
 interface User {
   name: string;
@@ -14,11 +17,13 @@ interface User {
 }
 
 export default function PdfViewerClient() {
+  const { role } = useUserContext();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showMyDocuments, setShowMyDocuments] = useState(false);
+  const [activeTab, setActive] = useState<string>("products");
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isDocumentsLoading, setIsDocumentsLoading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -32,6 +37,7 @@ export default function PdfViewerClient() {
         setUser(user);
       } catch (error) {
         console.log("Error fetching user details:", error);
+        router.push("/login");
       } finally {
         setLoading(false);
       }
@@ -75,7 +81,7 @@ export default function PdfViewerClient() {
     if (user) {
       fetchDocuments();
     }
-  }, [user, showMyDocuments]);
+  }, [user, activeTab]);
 
   return (
     <div
@@ -102,17 +108,21 @@ export default function PdfViewerClient() {
             <Header
               username={user?.name || "Guest"}
               profile_image_uri={user?.avatar_url || ""}
-              handleMyDocuments={() => setShowMyDocuments((prev) => !prev)}
+              handleMyDocuments={() => setActive("documents")}
               myDocumentsButtonText={
-                showMyDocuments ? "Pdf Viewer" : "Lab Documents"
+                activeTab === "documents" ? "Pdf Viewer" : "Lab Documents"
               }
+              handleUserManagement={() => setActive("userManagement")}
+              showUserManagementButton={role === "admin" || role === "Admin"}
             />
           </div>
-          {showMyDocuments ? (
+          {activeTab === "documents" ? (
             <DocumentsViewer
               documents={documents}
               loading={isDocumentsLoading}
             />
+          ) : activeTab === "userManagement" ? (
+            <UserManagement />
           ) : (
             <PDFViewer />
           )}

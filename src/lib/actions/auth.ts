@@ -31,7 +31,7 @@ export async function fetchUserDetails() {
 
     return user.user.user_metadata || user.user || {};
   } catch (error: any) {
-    console.error("Error fetching user details:", error.message);
+    console.log("Error fetching user details:", error.message);
     throw error;
   }
 }
