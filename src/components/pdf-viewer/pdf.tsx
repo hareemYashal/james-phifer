@@ -10,6 +10,7 @@ import { Document } from "@/types";
 import { useUserContext } from "@/context/user-context";
 import { useRouter } from "next/navigation";
 import UserManagement from "../user-management";
+import LabManagement from "../lab-management";
 
 interface User {
   name: string;
@@ -20,7 +21,7 @@ export default function PdfViewerClient() {
   const { role } = useUserContext();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActive] = useState<string>("products");
+  const [activeTab, setActive] = useState<string>("pdfViewer");
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isDocumentsLoading, setIsDocumentsLoading] = useState(false);
   const router = useRouter();
@@ -109,11 +110,12 @@ export default function PdfViewerClient() {
               username={user?.name || "Guest"}
               profile_image_uri={user?.avatar_url || ""}
               handleMyDocuments={() => setActive("documents")}
-              myDocumentsButtonText={
-                activeTab === "documents" ? "Pdf Viewer" : "Lab Documents"
-              }
+              handlePDFViewer={() => setActive("pdfViewer")}
               handleUserManagement={() => setActive("userManagement")}
               showUserManagementButton={role === "admin" || role === "Admin"}
+              handleLabManagement={() => setActive("labManagement")}
+              showLabManagementButton={role === "admin" || role === "Admin"}
+              activeTab={activeTab}
             />
           </div>
           {activeTab === "documents" ? (
@@ -123,6 +125,8 @@ export default function PdfViewerClient() {
             />
           ) : activeTab === "userManagement" ? (
             <UserManagement />
+          ) : activeTab === "labManagement" ? (
+            <LabManagement />
           ) : (
             <PDFViewer />
           )}

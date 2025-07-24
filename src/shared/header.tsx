@@ -4,26 +4,30 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { ShowToast } from "./showToast";
-import { useUserContext } from "@/context/user-context";
 
 interface HeaderProps {
   username: string;
   profile_image_uri?: string;
   handleMyDocuments?: () => void;
-  myDocumentsButtonText?: string;
   showUserManagementButton?: boolean;
   handleUserManagement?: () => void;
+  handleLabManagement?: () => void;
+  showLabManagementButton?: boolean;
+  handlePDFViewer?: () => void;
+  activeTab?: string;
 }
 
 const Header: React.FC<HeaderProps> = ({
   username,
   profile_image_uri,
   handleMyDocuments,
-  myDocumentsButtonText,
   handleUserManagement,
   showUserManagementButton = false,
+  handleLabManagement,
+  showLabManagementButton = false,
+  handlePDFViewer,
+  activeTab,
 }) => {
-  const { role } = useUserContext();
   const router = useRouter();
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
@@ -128,13 +132,40 @@ const Header: React.FC<HeaderProps> = ({
               }}
             >
               <button
+                onClick={handlePDFViewer}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  padding: "10px 16px",
+                  textAlign: "left",
+                  border: "none",
+                  fontSize: "14px",
+                  color: "#374151",
+                  cursor: "pointer",
+                  backgroundColor:
+                    activeTab === "pdfViewer" ? "#e5e7eb" : "white",
+                  transition: "background-color 0.2s ease",
+                }}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#f3f4f6")
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.backgroundColor =
+                    activeTab === "pdfViewer" ? "#e5e7eb" : "white")
+                }
+              >
+                PDF Viewer
+              </button>
+
+              <button
                 onClick={handleMyDocuments}
                 style={{
                   display: "block",
                   width: "100%",
                   padding: "10px 16px",
                   textAlign: "left",
-                  backgroundColor: "white",
+                  backgroundColor:
+                    activeTab === "documents" ? "#e5e7eb" : "white",
                   border: "none",
                   fontSize: "14px",
                   color: "#374151",
@@ -145,21 +176,23 @@ const Header: React.FC<HeaderProps> = ({
                   (e.currentTarget.style.backgroundColor = "#f3f4f6")
                 }
                 onMouseOut={(e) =>
-                  (e.currentTarget.style.backgroundColor = "white")
+                  (e.currentTarget.style.backgroundColor =
+                    activeTab === "documents" ? "#e5e7eb" : "white")
                 }
               >
-                {myDocumentsButtonText || "Lab Documents"}
+                Lab Documents
               </button>
 
-              {showUserManagementButton && (
+              {showLabManagementButton && (
                 <button
-                  onClick={handleUserManagement}
+                  onClick={handleLabManagement}
                   style={{
                     display: "block",
                     width: "100%",
                     padding: "10px 16px",
                     textAlign: "left",
-                    backgroundColor: "white",
+                    backgroundColor:
+                      activeTab === "labManagement" ? "#e5e7eb" : "white",
                     border: "none",
                     fontSize: "14px",
                     color: "#374151",
@@ -170,7 +203,36 @@ const Header: React.FC<HeaderProps> = ({
                     (e.currentTarget.style.backgroundColor = "#f3f4f6")
                   }
                   onMouseOut={(e) =>
-                    (e.currentTarget.style.backgroundColor = "white")
+                    (e.currentTarget.style.backgroundColor =
+                      activeTab === "labManagement" ? "#e5e7eb" : "white")
+                  }
+                >
+                  Lab Management
+                </button>
+              )}
+
+              {showUserManagementButton && (
+                <button
+                  onClick={handleUserManagement}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "10px 16px",
+                    textAlign: "left",
+                    backgroundColor:
+                      activeTab === "userManagement" ? "#e5e7eb" : "white",
+                    border: "none",
+                    fontSize: "14px",
+                    color: "#374151",
+                    cursor: "pointer",
+                    transition: "background-color 0.2s ease",
+                  }}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#f3f4f6")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.backgroundColor =
+                      activeTab === "userManagement" ? "#e5e7eb" : "white")
                   }
                 >
                   User Management

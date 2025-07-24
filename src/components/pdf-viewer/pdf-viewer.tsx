@@ -18,6 +18,7 @@ import {
   FileText,
   AlertCircle,
   Zap,
+  Import,
 } from "lucide-react";
 import Header from "@/shared/header";
 import {
@@ -30,6 +31,7 @@ import { BoundingBox, DetectedRegion, ExtractedField } from "@/lib/types";
 import { dateRegex, qtyMatchRegex } from "@/lib/constant";
 import { ShowToast } from "@/shared/showToast";
 import EditableTable from "../table";
+import ConfirmationModal from "@/shared/DataConfirmationModal";
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
@@ -308,6 +310,7 @@ export default function FormParserInterface() {
   };
 
   const [sending, setSending] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -425,7 +428,7 @@ export default function FormParserInterface() {
 
   const getCurrentPageFields = getFieldsForCurrentPage();
 
-  const handleSend: any = async () => {
+  const handleConfirmSend: any = async () => {
     setSending(true);
     try {
       const token = localStorage.getItem("access_token");
@@ -441,6 +444,7 @@ export default function FormParserInterface() {
       const result = await res.json();
       if (result.success) {
         ShowToast("Data saved successfully!", "success");
+        setShowConfirmationModal(false);
       } else {
         ShowToast("Error: " + result.error, "error");
       }
@@ -449,6 +453,14 @@ export default function FormParserInterface() {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleSend = () => {
+    setShowConfirmationModal(true);
+  };
+
+  const handleCancelSend = () => {
+    setShowConfirmationModal(false);
   };
 
   return (
@@ -944,6 +956,32 @@ export default function FormParserInterface() {
                     <Upload size={16} />
                     NEW DOCUMENT
                   </button>
+                  {!loading && (
+                    <button
+                      onClick={() =>
+                        document.getElementById("file-input")?.click()
+                      }
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        backgroundColor: "#3b82f6",
+                        color: "white",
+                        padding: "8px 16px",
+                        borderRadius: "6px",
+                        border: "none",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        cursor: "pointer",
+                        boxShadow: "0 2px 4px rgba(59, 130, 246, 0.2)",
+                        transition: "all 0.2s ease",
+                      }}
+                      disabled={extractedFields.length === 0}
+                    >
+                      <Import size={16} />
+                      Export
+                    </button>
+                  )}
                 </div>
               </>
             ) : (
@@ -1084,6 +1122,16 @@ export default function FormParserInterface() {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmationModal}
+        fields={extractedFields}
+        onFieldChange={handleFieldChange}
+        onRemoveField={removeField}
+        onClose={handleCancelSend}
+        onConfirm={handleConfirmSend}
+        isSending={sending}
+      />
 
       <style jsx>{`
         @keyframes spin {

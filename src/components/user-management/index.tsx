@@ -4,17 +4,21 @@ import { ShowToast } from "@/shared/showToast";
 import React, { useEffect, useState } from "react";
 import Loader from "../ui/loader";
 import AddUserModal from "@/shared/AddUserModal";
+import { useRouter } from "next/navigation";
+import { useUserContext } from "@/context/user-context";
+import Pagination from "@/shared/paginationControls";
 
 interface User {
   id: string;
   email: string;
   role?: string;
   lab_id?: string;
+  labs?: any;
 }
 
 function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -24,14 +28,17 @@ function UserManagement() {
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
   const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
-
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+  const router = useRouter();
+  const { user: currentUser } = useUserContext();
 
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from("users_lab").select("*");
+        const { data, error } = await supabase
+          .from("users_lab")
+          .select("id, email, role, lab_id, labs(name)");
+
         if (error) {
           ShowToast("Error fetching users. Please try again.");
           console.log("Error fetching users:", error);
@@ -47,7 +54,7 @@ function UserManagement() {
     };
 
     fetchUsers();
-  }, []);
+  }, [router]);
 
   const handleRemoveUser = async () => {
     if (!userToDelete) return;
@@ -71,8 +78,9 @@ function UserManagement() {
   };
 
   const refreshUsers = async () => {
-    // Fetch users again after adding a new user
-    const { data, error } = await supabase.from("users_lab").select("*");
+    const { data, error } = await supabase
+      .from("users_lab")
+      .select("id, email, role, lab_id, labs(name)");
     if (!error) setUsers(data);
   };
 
@@ -114,8 +122,13 @@ function UserManagement() {
       <table
         style={{
           width: "100%",
-          borderCollapse: "collapse",
+          borderCollapse: "separate",
+          borderSpacing: "0",
           marginBottom: "20px",
+          border: "1px solid #e5e7eb",
+          borderRadius: "10px",
+          boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
+          overflow: "hidden",
         }}
       >
         <thead>
@@ -124,7 +137,7 @@ function UserManagement() {
               Email
             </th>
             <th style={{ padding: "10px", borderBottom: "1px solid #ddd" }}>
-              Lab ID
+              Lab Name
             </th>
             <th style={{ padding: "10px", borderBottom: "1px solid #ddd" }}>
               Role
@@ -159,24 +172,34 @@ function UserManagement() {
                   {user.email}
                 </td>
                 <td style={{ padding: "10px", borderBottom: "1px solid #ddd" }}>
-                  {user.lab_id || "N/A"}
+                  {user.labs?.name || user.labs?.[0]?.name || "N/A"}
                 </td>
                 <td style={{ padding: "10px", borderBottom: "1px solid #ddd" }}>
                   {user.role || "N/A"}
                 </td>
                 <td style={{ padding: "10px", borderBottom: "1px solid #ddd" }}>
                   <button
+                    onClick={() => openModal(user)}
+                    disabled={user.email === currentUser?.email}
                     style={{
                       padding: "5px 10px",
-                      backgroundColor: "#f44336",
-                      color: "white",
+                      backgroundColor:
+                        user.email === currentUser?.email
+                          ? "#d1d5db"
+                          : "#f44336",
+                      color:
+                        user.email === currentUser?.email ? "#6b7280" : "white",
                       border: "none",
                       borderRadius: "5px",
-                      cursor: "pointer",
+                      cursor:
+                        user.email === currentUser?.email
+                          ? "not-allowed"
+                          : "pointer",
                     }}
-                    onClick={() => openModal(user)}
                   >
-                    Remove
+                    {user.email === currentUser?.email
+                      ? "Cannot Remove"
+                      : "Remove"}
                   </button>
                 </td>
               </tr>
@@ -184,35 +207,22 @@ function UserManagement() {
           </tbody>
         )}
       </table>
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        {Array.from(
-          { length: Math.ceil(users.length / usersPerPage) },
-          (_, index) => (
-            <button
-              key={index}
-              style={{
-                padding: "5px 10px",
-                margin: "0 5px",
-                backgroundColor:
-                  currentPage === index + 1 ? "#3b82f6" : "#f3f4f6",
-                color: currentPage === index + 1 ? "white" : "#374151",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-              }}
-              onClick={() => paginate(index + 1)}
-            >
-              {index + 1}
-            </button>
-          )
-        )}
-      </div>
+
+      {!loading && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(users.length / usersPerPage)}
+          onPageChange={(page) => setCurrentPage(page)}
+          disableButtons={loading}
+        />
+      )}
+
       <DeleteConfirmationModal
         isOpen={isModalOpen}
         onClose={closeModal}
         onConfirm={handleRemoveUser}
         name={userToDelete?.email}
-      />{" "}
+      />
       <AddUserModal
         isOpen={isAddUserModalOpen}
         onClose={() => setIsAddUserModalOpen(false)}
