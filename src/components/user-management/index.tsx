@@ -24,7 +24,7 @@ function UserManagement() {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
 
-  let usersPerPage = 10;
+  const usersPerPage = 10;
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
   const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
