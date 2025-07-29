@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
 import { ShowToast } from "./showToast";
 
@@ -30,6 +30,36 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const router = useRouter();
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownVisible(false);
+      }
+    };
+
+    if (dropdownVisible) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownVisible]);
 
   const toggleDropdown = () => {
     setDropdownVisible((prev) => !prev);
@@ -48,7 +78,6 @@ const Header: React.FC<HeaderProps> = ({
   return (
     <div
       style={{
-        // padding: "24px 32px",
         display: "flex",
         alignItems: "center",
         flexDirection: "row",
@@ -76,8 +105,116 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
+      {/* Desktop Navigation */}
+      {!isMobile && (
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "32px",
+          flex: 1,
+          justifyContent: "center"
+        }}>
+          <button
+            onClick={handlePDFViewer}
+            style={{
+              padding: "8px 16px",
+              border: "none",
+              backgroundColor: activeTab === "pdfViewer" ? "#e5e7eb" : "transparent",
+              fontSize: "14px",
+              fontWeight: "500",
+              color: "#374151",
+              cursor: "pointer",
+              borderRadius: "6px",
+              transition: "background-color 0.2s ease",
+            }}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.backgroundColor = activeTab === "pdfViewer" ? "#e5e7eb" : "#f3f4f6")
+            }
+            onMouseOut={(e) =>
+              (e.currentTarget.style.backgroundColor = activeTab === "pdfViewer" ? "#e5e7eb" : "transparent")
+            }
+          >
+            PDF Viewer
+          </button>
+
+          <button
+            onClick={handleMyDocuments}
+            style={{
+              padding: "8px 16px",
+              border: "none",
+              backgroundColor: activeTab === "documents" ? "#e5e7eb" : "transparent",
+              fontSize: "14px",
+              fontWeight: "500",
+              color: "#374151",
+              cursor: "pointer",
+              borderRadius: "6px",
+              transition: "background-color 0.2s ease",
+            }}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.backgroundColor = activeTab === "documents" ? "#e5e7eb" : "#f3f4f6")
+            }
+            onMouseOut={(e) =>
+              (e.currentTarget.style.backgroundColor = activeTab === "documents" ? "#e5e7eb" : "transparent")
+            }
+          >
+            Lab Documents
+          </button>
+
+          {showLabManagementButton && (
+            <button
+              onClick={handleLabManagement}
+              style={{
+                padding: "8px 16px",
+                border: "none",
+                backgroundColor: activeTab === "labManagement" ? "#e5e7eb" : "transparent",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#374151",
+                cursor: "pointer",
+                borderRadius: "6px",
+                transition: "background-color 0.2s ease",
+              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.backgroundColor = activeTab === "labManagement" ? "#e5e7eb" : "#f3f4f6")
+              }
+              onMouseOut={(e) =>
+                (e.currentTarget.style.backgroundColor = activeTab === "labManagement" ? "#e5e7eb" : "transparent")
+              }
+            >
+              Lab Management
+            </button>
+          )}
+
+          {showUserManagementButton && (
+            <button
+              onClick={handleUserManagement}
+              style={{
+                padding: "8px 16px",
+                border: "none",
+                backgroundColor: activeTab === "userManagement" ? "#e5e7eb" : "transparent",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#374151",
+                cursor: "pointer",
+                borderRadius: "6px",
+                transition: "background-color 0.2s ease",
+              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.backgroundColor = activeTab === "userManagement" ? "#e5e7eb" : "#f3f4f6")
+              }
+              onMouseOut={(e) =>
+                (e.currentTarget.style.backgroundColor = activeTab === "userManagement" ? "#e5e7eb" : "transparent")
+              }
+            >
+              User Management
+            </button>
+          )}
+        </div>
+      )}
+
       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
         <div
+          ref={dropdownRef}
           style={{
             display: "flex",
             alignItems: "center",
@@ -123,131 +260,154 @@ const Header: React.FC<HeaderProps> = ({
                 position: "absolute",
                 top: "100%",
                 right: 0,
+                marginTop: "8px",
                 backgroundColor: "white",
-                boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
                 borderRadius: "8px",
                 overflow: "hidden",
                 zIndex: 10,
                 minWidth: "160px",
+                border: "1px solid #e5e7eb",
               }}
             >
-              <button
-                onClick={handlePDFViewer}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  padding: "10px 16px",
-                  textAlign: "left",
-                  border: "none",
-                  fontSize: "14px",
-                  color: "#374151",
-                  cursor: "pointer",
-                  backgroundColor:
-                    activeTab === "pdfViewer" ? "#e5e7eb" : "white",
-                  transition: "background-color 0.2s ease",
-                }}
-                onMouseOver={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#f3f4f6")
-                }
-                onMouseOut={(e) =>
-                  (e.currentTarget.style.backgroundColor =
-                    activeTab === "pdfViewer" ? "#e5e7eb" : "white")
-                }
-              >
-                PDF Viewer
-              </button>
-
-              <button
-                onClick={handleMyDocuments}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  padding: "10px 16px",
-                  textAlign: "left",
-                  backgroundColor:
-                    activeTab === "documents" ? "#e5e7eb" : "white",
-                  border: "none",
-                  fontSize: "14px",
-                  color: "#374151",
-                  cursor: "pointer",
-                  transition: "background-color 0.2s ease",
-                }}
-                onMouseOver={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#f3f4f6")
-                }
-                onMouseOut={(e) =>
-                  (e.currentTarget.style.backgroundColor =
-                    activeTab === "documents" ? "#e5e7eb" : "white")
-                }
-              >
-                Lab Documents
-              </button>
-
-              {showLabManagementButton && (
-                <button
-                  onClick={handleLabManagement}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    padding: "10px 16px",
-                    textAlign: "left",
-                    backgroundColor:
-                      activeTab === "labManagement" ? "#e5e7eb" : "white",
-                    border: "none",
-                    fontSize: "14px",
-                    color: "#374151",
-                    cursor: "pointer",
-                    transition: "background-color 0.2s ease",
-                  }}
-                  onMouseOver={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#f3f4f6")
-                  }
-                  onMouseOut={(e) =>
+              {/* Mobile: Show all navigation items */}
+              {isMobile && (
+                <>
+                  <button
+                    onClick={handlePDFViewer}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      padding: "12px 16px",
+                      textAlign: "left",
+                      border: "none",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      color: "#374151",
+                      cursor: "pointer",
+                      backgroundColor:
+                        activeTab === "pdfViewer" ? "#e5e7eb" : "white",
+                      transition: "background-color 0.2s ease",
+                    }}
+                    onMouseOver={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#f3f4f6")
+                    }
+                    onMouseOut={(e) =>
                     (e.currentTarget.style.backgroundColor =
-                      activeTab === "labManagement" ? "#e5e7eb" : "white")
-                  }
-                >
-                  Lab Management
-                </button>
+                      activeTab === "pdfViewer" ? "#e5e7eb" : "white")
+                    }
+                  >
+                    PDF Viewer
+                  </button>
+
+                  <button
+                    onClick={handleMyDocuments}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      padding: "12px 16px",
+                      textAlign: "left",
+                      backgroundColor:
+                        activeTab === "documents" ? "#e5e7eb" : "white",
+                      border: "none",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      color: "#374151",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s ease",
+                    }}
+                    onMouseOver={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#f3f4f6")
+                    }
+                    onMouseOut={(e) =>
+                    (e.currentTarget.style.backgroundColor =
+                      activeTab === "documents" ? "#e5e7eb" : "white")
+                    }
+                  >
+                    Lab Documents
+                  </button>
+
+                  {showLabManagementButton && (
+                    <button
+                      onClick={handleLabManagement}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        padding: "12px 16px",
+                        textAlign: "left",
+                        backgroundColor:
+                          activeTab === "labManagement" ? "#e5e7eb" : "white",
+                        border: "none",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "#374151",
+                        cursor: "pointer",
+                        transition: "background-color 0.2s ease",
+                      }}
+                      onMouseOver={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f3f4f6")
+                      }
+                      onMouseOut={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        activeTab === "labManagement" ? "#e5e7eb" : "white")
+                      }
+                    >
+                      Lab Management
+                    </button>
+                  )}
+
+                  {showUserManagementButton && (
+                    <button
+                      onClick={handleUserManagement}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        padding: "12px 16px",
+                        textAlign: "left",
+                        backgroundColor:
+                          activeTab === "userManagement" ? "#e5e7eb" : "white",
+                        border: "none",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "#374151",
+                        cursor: "pointer",
+                        transition: "background-color 0.2s ease",
+                      }}
+                      onMouseOver={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f3f4f6")
+                      }
+                      onMouseOut={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        activeTab === "userManagement" ? "#e5e7eb" : "white")
+                      }
+                    >
+                      User Management
+                    </button>
+                  )}
+
+                  {/* Separator for mobile */}
+                  <div
+                    style={{
+                      height: "1px",
+                      backgroundColor: "#e5e7eb",
+                      margin: "4px 0",
+                    }}
+                  />
+                </>
               )}
 
-              {showUserManagementButton && (
-                <button
-                  onClick={handleUserManagement}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    padding: "10px 16px",
-                    textAlign: "left",
-                    backgroundColor:
-                      activeTab === "userManagement" ? "#e5e7eb" : "white",
-                    border: "none",
-                    fontSize: "14px",
-                    color: "#374151",
-                    cursor: "pointer",
-                    transition: "background-color 0.2s ease",
-                  }}
-                  onMouseOver={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#f3f4f6")
-                  }
-                  onMouseOut={(e) =>
-                    (e.currentTarget.style.backgroundColor =
-                      activeTab === "userManagement" ? "#e5e7eb" : "white")
-                  }
-                >
-                  User Management
-                </button>
-              )}
+              {/* Logout button (always shown) */}
               <button
                 onClick={handleLogout}
                 style={{
                   display: "block",
                   width: "100%",
-                  padding: "10px 16px",
+                  padding: "12px 16px",
                   textAlign: "left",
                   backgroundColor: "white",
                   border: "none",
                   fontSize: "14px",
+                  fontWeight: "500",
                   color: "#374151",
                   cursor: "pointer",
                   transition: "background-color 0.2s ease",
