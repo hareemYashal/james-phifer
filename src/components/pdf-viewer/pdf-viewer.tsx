@@ -26,11 +26,14 @@ import {
   extractKeyValuePairsFromText,
   processDocumentAPI,
   toDatabaseKey,
+  formatEntityTypeToDisplayName,
+  categorizeEntitiesIntoSections,
+  exportToExcel,
 } from "@/lib/utils";
 import { BoundingBox, DetectedRegion, ExtractedField } from "@/lib/types";
 import { dateRegex, qtyMatchRegex } from "@/lib/constant";
 import { ShowToast } from "@/shared/showToast";
-import EditableTable from "../table";
+import EditableTable, { SpreadsheetView } from "../table";
 import ConfirmationModal from "@/shared/DataConfirmationModal";
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
@@ -41,9 +44,17 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 function parseAPIResponse(apiData: any): {
   regions: DetectedRegion[];
   fields: ExtractedField[];
+  sections?: {
+    companyLocationInfo: any[];
+    contactProjectInfo: any[];
+    dataDeliverables: any[];
+    containerInfo: any[];
+    collectedSampleDataInfo: any[];
+  };
 } {
   const regions: DetectedRegion[] = [];
   const fields: ExtractedField[] = [];
+  let sections = undefined;
 
   try {
     // Handle OCR-style API response with pages and tokens
@@ -98,24 +109,51 @@ function parseAPIResponse(apiData: any): {
       });
     }
 
-    // Extract key-value pairs from the full text (this is the main source of data)
-    if (apiData.text) {
-      const extractedPairs = extractKeyValuePairsFromText(apiData.text);
-      extractedPairs.forEach((pair, index) => {
-        const fieldId = `extracted_${index}`;
-        fields.push({
-          id: fieldId,
-          key: toDatabaseKey(pair.key),
-          displayName: pair.key,
-          value: pair.value,
-          confidence: 0.9, // High confidence for text-extracted pairs
-          coordinates: { x: 0, y: 0, width: 0, height: 0 }, // No specific coordinates for text extraction
-          category: categorizeText(pair.key),
-          pageNumber: 1,
-          regionId: `region_text_${index}`,
-        });
+    // Extract key-value pairs from the entities (primary source)
+    if (apiData.entities && Array.isArray(apiData.entities)) {
+      // Categorize entities into sections for spreadsheet view
+      sections = categorizeEntitiesIntoSections(apiData.entities);
+
+      apiData.entities.forEach((entity: any, index: number) => {
+        if (entity.type && entity.value) {
+          // Convert entity type to display name using helper function
+          const displayName = formatEntityTypeToDisplayName(entity.type);
+
+          const fieldId = `entity_${index}`;
+          fields.push({
+            id: fieldId,
+            key: toDatabaseKey(displayName),
+            displayName: displayName,
+            value: entity.value,
+            confidence: entity.confidence || 0.9, // Use entity confidence or default to 0.9
+            coordinates: { x: 0, y: 0, width: 0, height: 0 }, // No specific coordinates for entity extraction
+            category: categorizeText(displayName),
+            pageNumber: 1,
+            regionId: `region_entity_${index}`,
+          });
+        }
       });
+    } else {
+      // As Fallback: Extract key-value pairs from the full text (when entities are not available)
+      if (apiData.text) {
+        const extractedPairs = extractKeyValuePairsFromText(apiData.text);
+        extractedPairs.forEach((pair, index) => {
+          const fieldId = `extracted_${index}`;
+          fields.push({
+            id: fieldId,
+            key: toDatabaseKey(pair.key),
+            displayName: pair.key,
+            value: pair.value,
+            confidence: 0.9, // High confidence for text-extracted pairs
+            coordinates: { x: 0, y: 0, width: 0, height: 0 }, // No specific coordinates for text extraction
+            category: categorizeText(pair.key),
+            pageNumber: 1,
+            regionId: `region_text_${index}`,
+          });
+        });
+      }
     }
+
 
     // If we have very few fields, try to extract more from structured patterns
     if (fields.length < 5 && apiData.text) {
@@ -139,7 +177,7 @@ function parseAPIResponse(apiData: any): {
     console.error("Error parsing OCR API response:", error);
   }
 
-  return { regions, fields };
+  return { regions, fields, sections };
 }
 
 // Additional function to extract structured data from invoice-like documents
@@ -252,6 +290,19 @@ export default function FormParserInterface() {
   // Data states
   const [detectedRegions, setDetectedRegions] = useState<DetectedRegion[]>([]);
   const [extractedFields, setExtractedFields] = useState<ExtractedField[]>([]);
+  const [categorizedSections, setCategorizedSections] = useState<{
+    companyLocationInfo: any[];
+    contactProjectInfo: any[];
+    dataDeliverables: any[];
+    containerInfo: any[];
+    collectedSampleDataInfo: any[];
+  }>({
+    companyLocationInfo: [],
+    contactProjectInfo: [],
+    dataDeliverables: [],
+    containerInfo: [],
+    collectedSampleDataInfo: []
+  });
   const [processingTime, setProcessingTime] = useState<number | null>(null);
   const [apiResponse, setApiResponse] = useState<any>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -333,6 +384,13 @@ export default function FormParserInterface() {
     setError(null);
     setDetectedRegions([]);
     setExtractedFields([]);
+    setCategorizedSections({
+      companyLocationInfo: [],
+      contactProjectInfo: [],
+      dataDeliverables: [],
+      containerInfo: [],
+      collectedSampleDataInfo: []
+    });
     setProcessingTime(null);
     setApiResponse(null);
     setProcessingStep("processing");
@@ -354,10 +412,15 @@ export default function FormParserInterface() {
         setApiResponse(result);
 
         // Parse the response to extract regions and fields
-        const { regions, fields } = parseAPIResponse(result);
+        const { regions, fields, sections } = parseAPIResponse(result);
 
         setDetectedRegions(regions);
         setExtractedFields(fields);
+
+        // Set categorized sections if available
+        if (sections) {
+          setCategorizedSections(sections);
+        }
         setProcessingTime((endTime - startTime) / 1000);
 
         // Set number of pages if provided by API
@@ -402,6 +465,62 @@ export default function FormParserInterface() {
     setExtractedFields((prev) =>
       prev.filter((field) => field !== fieldToRemove)
     );
+  };
+
+  // Handlers for spreadsheet view sections
+  const handleSectionFieldChange = (sectionType: string, index: number, value: string) => {
+    setCategorizedSections(prev => ({
+      ...prev,
+      [sectionType]: prev[sectionType as keyof typeof prev].map((item, idx) =>
+        idx === index ? { ...item, value } : item
+      )
+    }));
+
+    // Also update the extractedFields for consistency
+    const sectionItems = categorizedSections[sectionType as keyof typeof categorizedSections];
+    const item = sectionItems[index];
+    if (item) {
+      const fieldIndex = extractedFields.findIndex(field =>
+        field.regionId.includes('entity') && field.displayName === formatEntityTypeToDisplayName(item.type)
+      );
+      if (fieldIndex !== -1) {
+        setExtractedFields(prev =>
+          prev.map((field, idx) =>
+            idx === fieldIndex ? { ...field, value } : field
+          )
+        );
+      }
+    }
+  };
+
+  const handleSectionRemoveField = (sectionType: string, index: number) => {
+    const itemToRemove = categorizedSections[sectionType as keyof typeof categorizedSections][index];
+
+    setCategorizedSections(prev => ({
+      ...prev,
+      [sectionType]: prev[sectionType as keyof typeof prev].filter((_, idx) => idx !== index)
+    }));
+
+    // Also remove from extractedFields
+    if (itemToRemove) {
+      setExtractedFields(prev =>
+        prev.filter(field =>
+          !(field.regionId.includes('entity') && field.displayName === formatEntityTypeToDisplayName(itemToRemove.type))
+        )
+      );
+    }
+  };
+
+  // Export handler
+  const handleExport = () => {
+    if (categorizedSections.companyLocationInfo.length > 0 || categorizedSections.contactProjectInfo.length > 0 ||
+      categorizedSections.dataDeliverables.length > 0 || categorizedSections.containerInfo.length > 0 ||
+      categorizedSections.collectedSampleDataInfo.length > 0) {
+      exportToExcel(categorizedSections, 'extracted_document_data');
+      ShowToast("Data exported to CSV successfully!", "success");
+    } else {
+      ShowToast("No data available to export", "error");
+    }
   };
 
   const handleZoomIn = () => setScale((s) => Math.min(s + 0.2, 3));
@@ -658,6 +777,13 @@ export default function FormParserInterface() {
                         setPdfUrl(null);
                         setExtractedFields([]);
                         setDetectedRegions([]);
+                        setCategorizedSections({
+                          companyLocationInfo: [],
+                          contactProjectInfo: [],
+                          dataDeliverables: [],
+                          containerInfo: [],
+                          collectedSampleDataInfo: []
+                        });
                         setProcessingStep("upload");
                       }}
                       style={{
@@ -706,11 +832,22 @@ export default function FormParserInterface() {
                   </p>
                 </div>
               ) : (
-                <EditableTable
-                  fields={filteredFields}
-                  onFieldChange={handleFieldChange}
-                  onRemoveField={removeField}
-                />
+                // Use SpreadsheetView if we have categorized sections, otherwise use EditableTable
+                (categorizedSections.companyLocationInfo.length > 0 || categorizedSections.contactProjectInfo.length > 0 ||
+                  categorizedSections.dataDeliverables.length > 0 || categorizedSections.containerInfo.length > 0 ||
+                  categorizedSections.collectedSampleDataInfo.length > 0) ? (
+                  <SpreadsheetView
+                    sections={categorizedSections}
+                    onFieldChange={handleSectionFieldChange}
+                    onRemoveField={handleSectionRemoveField}
+                  />
+                ) : (
+                  <EditableTable
+                    fields={filteredFields}
+                    onFieldChange={handleFieldChange}
+                    onRemoveField={removeField}
+                  />
+                )
               )}
             </div>
 
@@ -958,9 +1095,7 @@ export default function FormParserInterface() {
                   </button>
                   {!loading && (
                     <button
-                      onClick={() =>
-                        document.getElementById("file-input")?.click()
-                      }
+                      onClick={handleExport}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -979,7 +1114,7 @@ export default function FormParserInterface() {
                       disabled={extractedFields.length === 0}
                     >
                       <Import size={16} />
-                      Export
+                      Export to Excel
                     </button>
                   )}
                 </div>

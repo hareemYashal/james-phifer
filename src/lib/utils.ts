@@ -47,6 +47,8 @@ export function toDatabaseKey(displayName: string): string {
     .replace(/^_|_$/g, "");
 }
 
+// entities mapping. func:
+
 // Enhanced function to extract key-value pairs from full text
 export function extractKeyValuePairsFromText(
   text: string
@@ -93,7 +95,7 @@ export function extractKeyValuePairsFromText(
     if (amountMatch) {
       amountMatch.forEach((amount, index) => {
         if (line.toLowerCase().includes("total")) {
-          pairs.push({ key: "Tonttal Amou", value: amount });
+          pairs.push({ key: "Total Amount", value: amount });
         } else if (line.toLowerCase().includes("subtotal")) {
           pairs.push({ key: "Subtotal", value: amount });
         } else if (line.toLowerCase().includes("due")) {
@@ -225,6 +227,15 @@ export function isCommonWord(text: string): boolean {
   return commonWords.includes(text.toLowerCase()) || text.length < 2;
 }
 
+// Helper function to convert entity type to display name
+export function formatEntityTypeToDisplayName(entityType: string): string {
+  return entityType
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (l: string) => l.toUpperCase())
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // Helper function to categorize text based on content
 export function categorizeText(text: string): string {
   const lowerText = text.toLowerCase();
@@ -272,4 +283,315 @@ export function categorizeText(text: string): string {
   }
 
   return "other";
+}
+
+// Helper function to categorize entities into sections based on AI engineer's specifications
+export function categorizeEntitiesIntoSections(entities: any[]): {
+  companyLocationInfo: any[];
+  contactProjectInfo: any[];
+  dataDeliverables: any[];
+  containerInfo: any[];
+  collectedSampleDataInfo: any[];
+} {
+  const sections = {
+    companyLocationInfo: [] as any[],
+    contactProjectInfo: [] as any[],
+    dataDeliverables: [] as any[],
+    containerInfo: [] as any[],
+    collectedSampleDataInfo: [] as any[]
+  };
+
+  // Define exact field mappings for each section
+  const sectionMapping = {
+    // 1) Company & Location Information
+    companyLocationInfo: [
+      'location_requested',
+      'company_name',
+      'street_address',
+      'project_name',
+      'site_collection_info',
+      'customer_project_no'
+    ],
+
+    // 2) Contact & Project Information
+    contactProjectInfo: [
+      'contact_to',
+      'phone_number',
+      'cc_email',
+      'invoice_to',
+      'invoice_email',
+      'purchase_order_no',
+      'quote_no',
+      'country_state_origin',
+      'regulatory_program',
+      'additional_instructions_from_pace'
+    ],
+
+    // 3) Data Deliverables
+    dataDeliverables: [
+      'date_result',
+      'date_deliverables_level2',
+      'date_deliverables_level3',
+      'date_deliverables_level4',
+      'date_deliverables_equis',
+      'date_deliverables_other'
+    ],
+
+    // 4) Container Information
+    containerInfo: [
+      'container_size',
+      'container_preservative_tyoe'
+    ],
+
+    // 5) Collected Sample Data Information and Analysis Request
+    collectedSampleDataInfo: [
+      'collected_name',
+      'collector_signature',
+      'customer_sample_id_1',
+      'customer_sample_id_2',
+      'customer_sample_id_3',
+      'customer_sample_id_4',
+      'customer_sample_id_5',
+      'customer_sample_id_6',
+      'customer_sample_id_7',
+      'customer_sample_id_8',
+      'customer_sample_id_9',
+      'customer_sample_id_10',
+      'customer_sample_id_1_matrix',
+      'customer_sample_id_2_matrix',
+      'customer_sample_id_3_matrix',
+      'customer_sample_id_4_matrix',
+      'customer_sample_id_5_matrix',
+      'customer_sample_id_6_matrix',
+      'customer_sample_id_7_matrix',
+      'customer_sample_id_8_matrix',
+      'customer_sample_id_9_matrix',
+      'customer_sample_id_10_matrix',
+      'customer_sample_id_1_comp',
+      'customer_sample_id_2_comp',
+      'customer_sample_id_3_comp',
+      'customer_sample_id_4_comp',
+      'customer_sample_id_5_comp',
+      'customer_sample_id_6_comp',
+      'customer_sample_id_7_comp',
+      'customer_sample_id_8_comp',
+      'customer_sample_id_9_comp',
+      'customer_sample_id_10_comp',
+      'customer_sample_id_1_start_date',
+      'customer_sample_id_2_start_date',
+      'customer_sample_id_3_start_date',
+      'customer_sample_id_4_start_date',
+      'customer_sample_id_5_start_date',
+      'customer_sample_id_6_start_date',
+      'customer_sample_id_7_start_date',
+      'customer_sample_id_8_start_date',
+      'customer_sample_id_9_start_date',
+      'customer_sample_id_10_start_date',
+      'customer_sample_id_1_start_time',
+      'customer_sample_id_2_start_time',
+      'customer_sample_id_3_start_time',
+      'customer_sample_id_4_start_time',
+      'customer_sample_id_5_start_time',
+      'customer_sample_id_6_start_time',
+      'customer_sample_id_7_start_time',
+      'customer_sample_id_8_start_time',
+      'customer_sample_id_9_start_time',
+      'customer_sample_id_10_start_time',
+      'customer_sample_id_1_end_date',
+      'customer_sample_id_2_end_date',
+      'customer_sample_id_3_end_date',
+      'customer_sample_id_4_end_date',
+      'customer_sample_id_5_end_date',
+      'customer_sample_id_6_end_date',
+      'customer_sample_id_7_end_date',
+      'customer_sample_id_8_end_date',
+      'customer_sample_id_9_end_date',
+      'customer_sample_id_10_end_date',
+      'customer_sample_id_1_end_time',
+      'customer_sample_id_2_end_time',
+      'customer_sample_id_3_end_time',
+      'customer_sample_id_4_end_time',
+      'customer_sample_id_5_end_time',
+      'customer_sample_id_6_end_time',
+      'customer_sample_id_7_end_time',
+      'customer_sample_id_8_end_time',
+      'customer_sample_id_9_end_time',
+      'customer_sample_id_10_end_time',
+      'sample_id_1_no_of_container',
+      'sample_id_2_no_of_container',
+      'sample_id_3_no_of_container',
+      'sample_id_4_no_of_container',
+      'sample_id_5_no_of_container',
+      'sample_id_6_no_of_container',
+      'sample_id_7_no_of_container',
+      'sample_id_8_no_of_container',
+      'sample_id_9_no_of_container',
+      'sample_id_10_no_of_container',
+      'analysis_request_1',
+      'analysis_request_2',
+      'analysis_request_3',
+      'analysis_request_4',
+      'analysis_request_5',
+      'analysis_request_6',
+      'analysis_request_7',
+      'analysis_request_8',
+      'analysis_request_9',
+      'analysis_request_10'
+    ]
+  };
+
+  entities.forEach(entity => {
+    if (!entity.type || entity.value === null) return; // Skip null or missing entities
+
+    const entityType = entity.type; // Use exact field name, no toLowerCase()
+
+    // Check each section using strict equality
+    if (sectionMapping.companyLocationInfo.includes(entityType)) {
+      sections.companyLocationInfo.push(entity);
+    }
+    else if (sectionMapping.contactProjectInfo.includes(entityType)) {
+      sections.contactProjectInfo.push(entity);
+    }
+    else if (sectionMapping.dataDeliverables.includes(entityType)) {
+      sections.dataDeliverables.push(entity);
+    }
+    else if (sectionMapping.containerInfo.includes(entityType)) {
+      sections.containerInfo.push(entity);
+    }
+    else if (sectionMapping.collectedSampleDataInfo.includes(entityType)) {
+      sections.collectedSampleDataInfo.push(entity);
+    }
+    // No default fallback - only show fields that are explicitly categorized
+  });
+
+  return sections;
+}
+
+// Helper function to export data to Excel format (CSV for now, can be enhanced)
+export function exportToExcel(sections: any, filename: string = 'extracted_data') {
+  let csvContent = '';
+
+  // Add Company & Location Information Section
+  csvContent += 'COMPANY & LOCATION INFORMATION\n';
+  csvContent += 'Field,Value,Confidence\n';
+  sections.companyLocationInfo.forEach((item: any) => {
+    const displayName = formatEntityTypeToDisplayName(item.type);
+    csvContent += `"${displayName}","${item.value}","${Math.round(item.confidence * 100)}%"\n`;
+  });
+  csvContent += '\n';
+
+  // Add Contact & Project Information Section
+  csvContent += 'CONTACT & PROJECT INFORMATION\n';
+  csvContent += 'Field,Value,Confidence\n';
+  sections.contactProjectInfo.forEach((item: any) => {
+    const displayName = formatEntityTypeToDisplayName(item.type);
+    csvContent += `"${displayName}","${item.value}","${Math.round(item.confidence * 100)}%"\n`;
+  });
+  csvContent += '\n';
+
+  // Add Data Deliverables Section
+  csvContent += 'DATA DELIVERABLES\n';
+  csvContent += 'Field,Value,Confidence\n';
+  sections.dataDeliverables.forEach((item: any) => {
+    const displayName = formatEntityTypeToDisplayName(item.type);
+    csvContent += `"${displayName}","${item.value}","${Math.round(item.confidence * 100)}%"\n`;
+  });
+  csvContent += '\n';
+
+  // Add Container Information Section
+  csvContent += 'CONTAINER INFORMATION\n';
+  csvContent += 'Field,Value,Confidence\n';
+  sections.containerInfo.forEach((item: any) => {
+    const displayName = formatEntityTypeToDisplayName(item.type);
+    csvContent += `"${displayName}","${item.value}","${Math.round(item.confidence * 100)}%"\n`;
+  });
+  csvContent += '\n';
+
+  // Add Collected Sample Data Information and Analysis Request Section
+  csvContent += 'COLLECTED SAMPLE DATA INFORMATION AND ANALYSIS REQUEST\n';
+
+  // Group sample data by sample number for table format (like the UI)
+  const groupedSamples: Record<string, any> = {};
+  const nonSampleFields: any[] = [];
+
+  sections.collectedSampleDataInfo.forEach((item: any) => {
+    const type = item.type;
+    let sampleNumber = '';
+
+    // Extract sample number from field type
+    if (type.includes('customer_sample_id_')) {
+      const match = type.match(/customer_sample_id_(\d+)(?:_.*)?/);
+      if (match) {
+        sampleNumber = match[1];
+      }
+    } else if (type.includes('sample_id_')) {
+      const match = type.match(/sample_id_(\d+)_/);
+      if (match) {
+        sampleNumber = match[1];
+      }
+    } else if (type.includes('analysis_request_')) {
+      const match = type.match(/analysis_request_(\d+)/);
+      if (match) {
+        sampleNumber = match[1];
+      }
+    } else {
+      // Handle non-sample specific fields like collected_name, collector_signature
+      nonSampleFields.push(item);
+    }
+
+    if (sampleNumber) {
+      if (!groupedSamples[sampleNumber]) {
+        groupedSamples[sampleNumber] = {};
+      }
+      groupedSamples[sampleNumber][type] = item;
+    }
+  });
+
+  // Add non-sample fields first
+  if (nonSampleFields.length > 0) {
+    csvContent += 'General Information:\n';
+    nonSampleFields.forEach(field => {
+      const displayName = formatEntityTypeToDisplayName(field.type);
+      csvContent += `"${displayName}","${field.value}","${Math.round(field.confidence * 100)}%"\n`;
+    });
+    csvContent += '\n';
+  }
+
+  // Add sample data in table format
+  if (Object.keys(groupedSamples).length > 0) {
+    csvContent += 'Sample Data Table:\n';
+    csvContent += '"Customer Sample ID","Matrix","Comp/Grab","Composite Start Date","Composite Start Time","Collected End Date","Collected End Time","# Cont","Analysis Request"\n';
+
+    const sampleNumbers = Object.keys(groupedSamples).sort((a, b) => parseInt(a) - parseInt(b));
+
+    sampleNumbers.forEach(sampleNum => {
+      const sample = groupedSamples[sampleNum];
+      const sampleId = sample[`customer_sample_id_${sampleNum}`];
+      const matrix = sample[`customer_sample_id_${sampleNum}_matrix`];
+      const comp = sample[`customer_sample_id_${sampleNum}_comp`];
+      const startDate = sample[`customer_sample_id_${sampleNum}_start_date`];
+      const startTime = sample[`customer_sample_id_${sampleNum}_start_time`];
+      const endDate = sample[`customer_sample_id_${sampleNum}_end_date`];
+      const endTime = sample[`customer_sample_id_${sampleNum}_end_time`];
+      const containers = sample[`sample_id_${sampleNum}_no_of_container`];
+      const analysis = sample[`analysis_request_${sampleNum}`];
+
+      // Only add row if at least one field exists for this sample
+      const hasData = sampleId || matrix || comp || startDate || startTime || endDate || endTime || containers || analysis;
+      if (hasData) {
+        csvContent += `"${sampleId?.value || ''}","${matrix?.value || ''}","${comp?.value || ''}","${startDate?.value || ''}","${startTime?.value || ''}","${endDate?.value || ''}","${endTime?.value || ''}","${containers?.value || ''}","${analysis?.value || ''}"\n`;
+      }
+    });
+  }
+
+  // Create and download file
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${filename}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
