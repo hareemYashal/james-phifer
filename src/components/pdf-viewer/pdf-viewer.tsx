@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Document, Page as PDFPage, pdfjs } from "react-pdf";
 import {
   Upload,
@@ -308,6 +308,12 @@ export default function FormParserInterface() {
   const [isDragging, setIsDragging] = useState(false);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
 
+  // Resizer states
+  const [leftPanelWidth, setLeftPanelWidth] = useState(30); // Percentage
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeStartX, setResizeStartX] = useState(0);
+  const [resizeStartWidth, setResizeStartWidth] = useState(30);
+
   const [dragStart, setDragStart] = useState<{
     x: number;
     y: number;
@@ -359,6 +365,121 @@ export default function FormParserInterface() {
     setIsDragging(false);
     setDragStart(null);
   };
+
+  // Resizer handlers
+  const handleResizerMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setIsResizing(true);
+    setResizeStartX(e.clientX);
+    setResizeStartWidth(leftPanelWidth);
+
+    // Create the move and up handlers with current values
+    const handleMove = (moveEvent: MouseEvent) => {
+      moveEvent.preventDefault();
+      const deltaX = moveEvent.clientX - e.clientX;
+      const containerWidth = window.innerWidth;
+      const deltaPercentage = (deltaX / containerWidth) * 100;
+
+      // Calculate new width with constraints
+      let newWidth = leftPanelWidth + deltaPercentage;
+      newWidth = Math.max(15, Math.min(60, newWidth)); // Min 15%, Max 60%
+
+      setLeftPanelWidth(newWidth);
+    };
+
+    const handleUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+    };
+
+    // Add global event listeners
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+  };
+
+  const handleResizerMouseMove = (e: MouseEvent) => {
+    if (!isResizing) return;
+
+    const deltaX = e.clientX - resizeStartX;
+    const containerWidth = window.innerWidth;
+    const deltaPercentage = (deltaX / containerWidth) * 100;
+
+    // Calculate new width with constraints
+    let newWidth = resizeStartWidth + deltaPercentage;
+    newWidth = Math.max(15, Math.min(60, newWidth)); // Min 15%, Max 60%
+
+    setLeftPanelWidth(newWidth);
+  };
+
+  const handleResizerMouseUp = () => {
+    setIsResizing(false);
+    document.removeEventListener('mousemove', handleResizerMouseMove);
+    document.removeEventListener('mouseup', handleResizerMouseUp);
+  };
+
+  // Touch handlers for mobile support
+  const handleResizerTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    setIsResizing(true);
+    setResizeStartX(touch.clientX);
+    setResizeStartWidth(leftPanelWidth);
+
+    // Add global touch event listeners
+    document.addEventListener('touchmove', handleResizerTouchMove, { passive: false });
+    document.addEventListener('touchend', handleResizerTouchEnd);
+  };
+
+  const handleResizerTouchMove = (e: TouchEvent) => {
+    e.preventDefault();
+    if (!isResizing) return;
+
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - resizeStartX;
+    const containerWidth = window.innerWidth;
+    const deltaPercentage = (deltaX / containerWidth) * 100;
+
+    // Calculate new width with constraints
+    let newWidth = resizeStartWidth + deltaPercentage;
+    newWidth = Math.max(15, Math.min(60, newWidth)); // Min 15%, Max 60%
+
+    setLeftPanelWidth(newWidth);
+  };
+
+  const handleResizerTouchEnd = () => {
+    setIsResizing(false);
+    document.removeEventListener('touchmove', handleResizerTouchMove);
+    document.removeEventListener('touchend', handleResizerTouchEnd);
+  };
+
+  // Clean up event listeners on component unmount
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleResizerMouseMove);
+      document.removeEventListener('mouseup', handleResizerMouseUp);
+      document.removeEventListener('touchmove', handleResizerTouchMove);
+      document.removeEventListener('touchend', handleResizerTouchEnd);
+    };
+  }, []);
+
+  // Add global style for body when resizing to prevent text selection
+  useEffect(() => {
+    if (isResizing) {
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
+    } else {
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    }
+
+    return () => {
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+  }, [isResizing]);
 
   const [sending, setSending] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
@@ -601,14 +722,14 @@ export default function FormParserInterface() {
         {!isPanelCollapsed && (
           <div
             style={{
-              width: "30%",
+              width: `${leftPanelWidth}%`,
               backgroundColor: "white",
               borderRight: "1px solid #e5e7eb",
               display: "flex",
               flexDirection: "column",
-              // position: "relative",
               height: "100%",
               overflow: "hidden",
+              transition: isResizing ? "none" : "width 0.2s ease",
             }}
           >
             {/* Tabs */}
@@ -618,7 +739,7 @@ export default function FormParserInterface() {
                 backgroundColor: "#f8fafc",
               }}
             >
-              {[{ key: "keyvalue", label: "KEY VALUE PAIR" }].map((tab) => (
+              {[{ key: "keyvalue", label: "COC Document" }].map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key as any)}
@@ -648,8 +769,8 @@ export default function FormParserInterface() {
                 backgroundColor: "#f8fafc",
               }}
             >
-              <div style={{ position: "relative" }}>
-                <Search
+              {/* <div style={{ position: "relative" }}> */}
+              {/* <Search
                   size={16}
                   style={{
                     position: "absolute",
@@ -658,8 +779,8 @@ export default function FormParserInterface() {
                     transform: "translateY(-50%)",
                     color: "#9ca3af",
                   }}
-                />
-                <input
+                /> */}
+              {/* <input
                   type="text"
                   placeholder="Search fields..."
                   value={filterText}
@@ -673,10 +794,10 @@ export default function FormParserInterface() {
                     outline: "none",
                     boxSizing: "border-box",
                   }}
-                />
-              </div>
+                /> */}
+              {/* </div> */}
 
-              <div
+              {/* <div
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -688,7 +809,7 @@ export default function FormParserInterface() {
                   {filteredFields.length} total fields •{" "}
                   {getCurrentPageFields.length} on page {pageNumber}
                 </span>
-              </div>
+              </div> */}
             </div>
 
             {/* Fields List */}
@@ -915,11 +1036,78 @@ export default function FormParserInterface() {
             </div>
           </div>
         )}
+
+        {/* Draggable Resizer */}
+        {!isPanelCollapsed && (
+          <div
+            style={{
+              width: "8px",
+              minWidth: "8px",
+              backgroundColor: isResizing ? "#3b82f6" : "#d1d5db",
+              cursor: "col-resize",
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: isResizing ? "none" : "background-color 0.2s ease",
+              boxShadow: isResizing ? "0 0 8px rgba(59, 130, 246, 0.4)" : "none",
+              borderLeft: "1px solid #e5e7eb",
+              borderRight: "1px solid #e5e7eb",
+              userSelect: "none",
+              height: "100%",
+            }}
+            onMouseDown={handleResizerMouseDown}
+            onTouchStart={handleResizerTouchStart}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = isResizing ? "#3b82f6" : "#3b82f6";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = isResizing ? "#3b82f6" : "#d1d5db";
+            }}
+          >
+            {/* Visual indicator dots */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "3px",
+                alignItems: "center",
+                pointerEvents: "none", // Ensure clicks pass through to parent
+              }}
+            >
+              <div
+                style={{
+                  width: "3px",
+                  height: "3px",
+                  backgroundColor: "#6b7280",
+                  borderRadius: "50%",
+                }}
+              />
+              <div
+                style={{
+                  width: "3px",
+                  height: "3px",
+                  backgroundColor: "#6b7280",
+                  borderRadius: "50%",
+                }}
+              />
+              <div
+                style={{
+                  width: "3px",
+                  height: "3px",
+                  backgroundColor: "#6b7280",
+                  borderRadius: "50%",
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         <button
           onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
           style={{
             position: "absolute",
-            left: isPanelCollapsed ? "20px" : "29.5%",
+            left: isPanelCollapsed ? "20px" : `${leftPanelWidth}%`,
             zIndex: 10,
             marginTop: "60px",
             backgroundColor: "#3b82f6",
@@ -930,7 +1118,7 @@ export default function FormParserInterface() {
             fontSize: "14px",
             fontWeight: "500",
             cursor: "pointer",
-            transition: "left 0.3s",
+            transition: isResizing ? "none" : "left 0.2s ease",
           }}
         >
           {isPanelCollapsed ? (
@@ -943,12 +1131,12 @@ export default function FormParserInterface() {
         {/* Right Panel - PDF Viewer */}
         <div
           style={{
-            flex: 1,
+            width: isPanelCollapsed ? "100%" : `${100 - leftPanelWidth - 0.6}%`, // Subtract resizer width
             backgroundColor: "#f8fafc",
             display: "flex",
             flexDirection: "column",
             position: "relative",
-            maxWidth: isPanelCollapsed ? "100%" : "70%",
+            transition: isResizing ? "none" : "width 0.2s ease",
           }}
         >
           {/* PDF Controls */}
@@ -1287,6 +1475,6 @@ export default function FormParserInterface() {
           }
         }
       `}</style>
-    </div>
+    </div >
   );
 }
