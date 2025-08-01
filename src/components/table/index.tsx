@@ -384,8 +384,8 @@ interface SpreadsheetViewProps {
   editable?: boolean;
 }
 
-// Section component for organized display
-const SectionDisplay: React.FC<{
+// Generic Spreadsheet Table Component for all sections
+const SpreadsheetTable: React.FC<{
   title: string;
   items: any[];
   sectionType: string;
@@ -423,123 +423,85 @@ const SectionDisplay: React.FC<{
         </h3>
       </div>
 
-      {/* Section Content */}
-      <div style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "1px",
-        backgroundColor: "#e5e7eb"
-      }}>
-        {items.map((item, index) => (
-          <div key={`${sectionType}-${index}`} style={{
-            backgroundColor: "#ffffff",
-            display: "flex",
-            alignItems: "stretch",
-            minHeight: "44px"
-          }}>
-            {/* Field Label */}
-            <div style={{
-              padding: "8px 12px",
-              backgroundColor: "#f9fafb",
-              borderRight: "1px solid #e5e7eb",
-              minWidth: "120px",
-              maxWidth: "160px",
-              width: "30%",
-              display: "flex",
-              alignItems: "center",
-              fontSize: "13px",
-              fontWeight: "500",
-              color: "#374151",
-              wordWrap: "break-word",
-              lineHeight: "1.3"
-            }}>
-              {formatEntityTypeToDisplayName(item.type)}
-            </div>
-
-            {/* Field Value */}
-            <div style={{
-              flex: 1,
-              padding: "8px 12px",
-              display: "flex",
-              alignItems: "center",
-              minWidth: "100px"
-            }}>
-              <input
-                type="text"
-                value={item.value}
-                disabled={!editable}
-                onChange={(e) => onFieldChange?.(sectionType, index, e.target.value)}
-                style={{
-                  width: "100%",
-                  minWidth: "80px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "4px",
-                  padding: "6px 8px",
-                  fontSize: "13px",
-                  outline: "none",
-                  backgroundColor: editable ? "#ffffff" : "#f9fafb",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis"
-                }}
-              />
-            </div>
-
-            {/* Confidence Score */}
-            <div style={{
-              padding: "8px",
-              borderLeft: "1px solid #e5e7eb",
-              minWidth: "60px",
-              width: "80px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "11px",
-              fontWeight: "600",
-              color: item.confidence >= 0.9 ? "#059669" : item.confidence >= 0.7 ? "#d97706" : "#dc2626"
-            }}>
-              {Math.round(item.confidence * 100)}%
-            </div>
-
-            {/* Remove Button */}
-            {editable && (
-              <div style={{
-                padding: "6px",
-                borderLeft: "1px solid #e5e7eb",
-                display: "flex",
-                alignItems: "center",
-                width: "40px",
-                minWidth: "40px"
-              }}>
-                <button
-                  onClick={() => onRemoveField?.(sectionType, index)}
-                  style={{
-                    backgroundColor: "#ef4444",
-                    color: "white",
-                    padding: "4px 6px",
-                    borderRadius: "3px",
-                    border: "none",
-                    fontSize: "11px",
-                    cursor: "pointer",
-                    transition: "background-color 0.2s ease",
-                    width: "28px",
-                    height: "28px",
+      {/* Table Content */}
+      <div style={{ overflowX: "auto" }}>
+        <table style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          fontSize: "12px"
+        }}>
+          <thead>
+            <tr style={{ backgroundColor: "#f9fafb" }}>
+              <th style={headerStyle}>Field Name</th>
+              <th style={headerStyle}>Value</th>
+              <th style={headerStyle}>Confidence</th>
+              {editable && <th style={headerStyle}>Actions</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, index) => (
+              <tr key={`${sectionType}-${index}`}>
+                <td style={cellStyle}>
+                  <div style={{
+                    fontSize: "12px",
+                    fontWeight: "500",
+                    color: "#374151",
+                    wordWrap: "break-word",
+                    lineHeight: "1.3"
+                  }}>
+                    {formatEntityTypeToDisplayName(item.type)}
+                  </div>
+                </td>
+                <td style={cellStyle}>
+                  <input
+                    type="text"
+                    value={item.value || ''}
+                    disabled={!editable}
+                    onChange={(e) => onFieldChange?.(sectionType, index, e.target.value)}
+                    style={inputStyle}
+                  />
+                </td>
+                <td style={cellStyle}>
+                  <div style={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center"
-                  }}
-                  onMouseOver={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#dc2626")
-                  }
-                  onMouseOut={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#ef4444")
-                  }
-                >
-                  ×
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
+                    justifyContent: "center",
+                    fontSize: "11px",
+                    fontWeight: "600",
+                    color: item.confidence >= 0.9 ? "#059669" : item.confidence >= 0.7 ? "#d97706" : "#dc2626"
+                  }}>
+                    {Math.round(item.confidence * 100)}%
+                  </div>
+                </td>
+                {editable && (
+                  <td style={cellStyle}>
+                    <button
+                      onClick={() => onRemoveField?.(sectionType, index)}
+                      style={{
+                        backgroundColor: "#ef4444",
+                        color: "white",
+                        padding: "2px 6px",
+                        borderRadius: "3px",
+                        border: "none",
+                        fontSize: "11px",
+                        cursor: "pointer",
+                        transition: "background-color 0.2s ease"
+                      }}
+                      onMouseOver={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#dc2626")
+                      }
+                      onMouseOut={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#ef4444")
+                      }
+                    >
+                      ×
+                    </button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -559,7 +521,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
       overflowY: "auto",
       backgroundColor: "#f8fafc"
     }}>
-      <SectionDisplay
+      <SpreadsheetTable
         title="Company & Location Information"
         items={sections.companyLocationInfo}
         sectionType="companyLocationInfo"
@@ -568,7 +530,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
         editable={editable}
       />
 
-      <SectionDisplay
+      <SpreadsheetTable
         title="Contact & Project Information"
         items={sections.contactProjectInfo}
         sectionType="contactProjectInfo"
@@ -577,7 +539,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
         editable={editable}
       />
 
-      <SectionDisplay
+      <SpreadsheetTable
         title="Data Deliverables"
         items={sections.dataDeliverables}
         sectionType="dataDeliverables"
@@ -586,7 +548,7 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
         editable={editable}
       />
 
-      <SectionDisplay
+      <SpreadsheetTable
         title="Container Information"
         items={sections.containerInfo}
         sectionType="containerInfo"
