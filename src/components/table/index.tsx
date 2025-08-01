@@ -55,7 +55,7 @@ const SampleDataTable: React.FC<{
 
   return (
     <div style={{
-      marginBottom: "80px",
+      marginBottom: "15vh",
       border: "2px solid #e5e7eb",
       borderRadius: "8px",
       backgroundColor: "#ffffff",
@@ -84,10 +84,21 @@ const SampleDataTable: React.FC<{
       {/* Non-sample specific fields */}
       {nonSampleFields.length > 0 && (
         <div style={{ padding: "12px 16px", backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "12px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {nonSampleFields.map((field, index) => (
-              <div key={field.type} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <label style={{ fontSize: "12px", fontWeight: "500", minWidth: "120px" }}>
+              <div key={field.type} style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                minHeight: "36px"
+              }}>
+                <label style={{
+                  fontSize: "12px",
+                  fontWeight: "500",
+                  minWidth: "120px",
+                  maxWidth: "160px",
+                  width: "30%"
+                }}>
                   {formatEntityTypeToDisplayName(field.type)}:
                 </label>
                 <input
@@ -97,9 +108,10 @@ const SampleDataTable: React.FC<{
                   onChange={(e) => onFieldChange?.('collectedSampleDataInfo', field.originalIndex, e.target.value)}
                   style={{
                     flex: 1,
+                    minWidth: "100px",
                     border: "1px solid #d1d5db",
                     borderRadius: "4px",
-                    padding: "4px 8px",
+                    padding: "6px 8px",
                     fontSize: "12px",
                     outline: "none"
                   }}
@@ -110,11 +122,16 @@ const SampleDataTable: React.FC<{
                     style={{
                       backgroundColor: "#ef4444",
                       color: "white",
-                      padding: "2px 6px",
+                      padding: "4px 6px",
                       borderRadius: "3px",
                       border: "none",
                       fontSize: "11px",
-                      cursor: "pointer"
+                      cursor: "pointer",
+                      width: "28px",
+                      height: "28px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
                     }}
                   >
                     ×
@@ -408,8 +425,8 @@ const SectionDisplay: React.FC<{
 
       {/* Section Content */}
       <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+        display: "flex",
+        flexDirection: "column",
         gap: "1px",
         backgroundColor: "#e5e7eb"
       }}>
@@ -417,19 +434,24 @@ const SectionDisplay: React.FC<{
           <div key={`${sectionType}-${index}`} style={{
             backgroundColor: "#ffffff",
             display: "flex",
-            alignItems: "stretch"
+            alignItems: "stretch",
+            minHeight: "44px"
           }}>
             {/* Field Label */}
             <div style={{
-              padding: "12px",
+              padding: "8px 12px",
               backgroundColor: "#f9fafb",
               borderRight: "1px solid #e5e7eb",
-              minWidth: "140px",
+              minWidth: "120px",
+              maxWidth: "160px",
+              width: "30%",
               display: "flex",
               alignItems: "center",
-              fontSize: "14px",
+              fontSize: "13px",
               fontWeight: "500",
-              color: "#374151"
+              color: "#374151",
+              wordWrap: "break-word",
+              lineHeight: "1.3"
             }}>
               {formatEntityTypeToDisplayName(item.type)}
             </div>
@@ -439,7 +461,8 @@ const SectionDisplay: React.FC<{
               flex: 1,
               padding: "8px 12px",
               display: "flex",
-              alignItems: "center"
+              alignItems: "center",
+              minWidth: "100px"
             }}>
               <input
                 type="text"
@@ -448,25 +471,29 @@ const SectionDisplay: React.FC<{
                 onChange={(e) => onFieldChange?.(sectionType, index, e.target.value)}
                 style={{
                   width: "100%",
+                  minWidth: "80px",
                   border: "1px solid #d1d5db",
                   borderRadius: "4px",
                   padding: "6px 8px",
-                  fontSize: "14px",
+                  fontSize: "13px",
                   outline: "none",
-                  backgroundColor: editable ? "#ffffff" : "#f9fafb"
+                  backgroundColor: editable ? "#ffffff" : "#f9fafb",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis"
                 }}
               />
             </div>
 
             {/* Confidence Score */}
             <div style={{
-              padding: "12px",
+              padding: "8px",
               borderLeft: "1px solid #e5e7eb",
-              minWidth: "80px",
+              minWidth: "60px",
+              width: "80px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "12px",
+              fontSize: "11px",
               fontWeight: "600",
               color: item.confidence >= 0.9 ? "#059669" : item.confidence >= 0.7 ? "#d97706" : "#dc2626"
             }}>
@@ -476,22 +503,29 @@ const SectionDisplay: React.FC<{
             {/* Remove Button */}
             {editable && (
               <div style={{
-                padding: "8px",
+                padding: "6px",
                 borderLeft: "1px solid #e5e7eb",
                 display: "flex",
-                alignItems: "center"
+                alignItems: "center",
+                width: "40px",
+                minWidth: "40px"
               }}>
                 <button
                   onClick={() => onRemoveField?.(sectionType, index)}
                   style={{
                     backgroundColor: "#ef4444",
                     color: "white",
-                    padding: "4px 8px",
-                    borderRadius: "4px",
+                    padding: "4px 6px",
+                    borderRadius: "3px",
                     border: "none",
-                    fontSize: "12px",
+                    fontSize: "11px",
                     cursor: "pointer",
-                    transition: "background-color 0.2s ease"
+                    transition: "background-color 0.2s ease",
+                    width: "28px",
+                    height: "28px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
                   }}
                   onMouseOver={(e) =>
                     (e.currentTarget.style.backgroundColor = "#dc2626")
