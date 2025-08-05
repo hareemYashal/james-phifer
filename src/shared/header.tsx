@@ -9,6 +9,7 @@ interface HeaderProps {
   username: string;
   profile_image_uri?: string;
   handleMyDocuments?: () => void;
+  showLabDocumentsButton?: boolean;
   showUserManagementButton?: boolean;
   handleUserManagement?: () => void;
   handleLabManagement?: () => void;
@@ -21,6 +22,7 @@ const Header: React.FC<HeaderProps> = ({
   username,
   profile_image_uri,
   handleMyDocuments,
+  showLabDocumentsButton = false,
   handleUserManagement,
   showUserManagementButton = false,
   handleLabManagement,
@@ -137,28 +139,30 @@ const Header: React.FC<HeaderProps> = ({
             PDF Viewer
           </button>
 
-          <button
-            onClick={handleMyDocuments}
-            style={{
-              padding: "8px 16px",
-              border: "none",
-              backgroundColor: activeTab === "documents" ? "#e5e7eb" : "transparent",
-              fontSize: "14px",
-              fontWeight: "500",
-              color: "#374151",
-              cursor: "pointer",
-              borderRadius: "6px",
-              transition: "background-color 0.2s ease",
-            }}
-            onMouseOver={(e) =>
-              (e.currentTarget.style.backgroundColor = activeTab === "documents" ? "#e5e7eb" : "#f3f4f6")
-            }
-            onMouseOut={(e) =>
-              (e.currentTarget.style.backgroundColor = activeTab === "documents" ? "#e5e7eb" : "transparent")
-            }
-          >
-            Lab Documents
-          </button>
+          {showLabDocumentsButton && (
+            <button
+              onClick={handleMyDocuments}
+              style={{
+                padding: "8px 16px",
+                border: "none",
+                backgroundColor: activeTab === "documents" ? "#e5e7eb" : "transparent",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#374151",
+                cursor: "pointer",
+                borderRadius: "6px",
+                transition: "background-color 0.2s ease",
+              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.backgroundColor = activeTab === "documents" ? "#e5e7eb" : "#f3f4f6")
+              }
+              onMouseOut={(e) =>
+                (e.currentTarget.style.backgroundColor = activeTab === "documents" ? "#e5e7eb" : "transparent")
+              }
+            >
+              Lab Documents
+            </button>
+          )}
 
           {showLabManagementButton && (
             <button
@@ -300,32 +304,34 @@ const Header: React.FC<HeaderProps> = ({
                     PDF Viewer
                   </button>
 
-                  <button
-                    onClick={handleMyDocuments}
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      padding: "12px 16px",
-                      textAlign: "left",
-                      backgroundColor:
-                        activeTab === "documents" ? "#e5e7eb" : "white",
-                      border: "none",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      color: "#374151",
-                      cursor: "pointer",
-                      transition: "background-color 0.2s ease",
-                    }}
-                    onMouseOver={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#f3f4f6")
-                    }
-                    onMouseOut={(e) =>
-                    (e.currentTarget.style.backgroundColor =
-                      activeTab === "documents" ? "#e5e7eb" : "white")
-                    }
-                  >
-                    Lab Documents
-                  </button>
+                  {showLabDocumentsButton && (
+                    <button
+                      onClick={handleMyDocuments}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        padding: "12px 16px",
+                        textAlign: "left",
+                        backgroundColor:
+                          activeTab === "documents" ? "#e5e7eb" : "white",
+                        border: "none",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "#374151",
+                        cursor: "pointer",
+                        transition: "background-color 0.2s ease",
+                      }}
+                      onMouseOver={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f3f4f6")
+                      }
+                      onMouseOut={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        activeTab === "documents" ? "#e5e7eb" : "white")
+                      }
+                    >
+                      Lab Documents
+                    </button>
+                  )}
 
                   {showLabManagementButton && (
                     <button

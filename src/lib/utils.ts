@@ -560,7 +560,7 @@ export function exportToExcel(sections: any, filename: string = 'extracted_data'
   // Add sample data in table format
   if (Object.keys(groupedSamples).length > 0) {
     csvContent += 'Sample Data Table:\n';
-    csvContent += '"Customer Sample ID","Matrix","Comp/Grab","Composite Start Date","Composite Start Time","Collected End Date","Collected End Time","# Cont","Analysis Request"\n';
+    csvContent += '"Customer Sample ID","Confidence","Matrix","Confidence","Comp/Grab","Confidence","Composite Start Date","Confidence","Composite Start Time","Confidence","Collected End Date","Confidence","Collected End Time","Confidence","# Cont","Confidence","Analysis Request","Confidence"\n';
 
     const sampleNumbers = Object.keys(groupedSamples).sort((a, b) => parseInt(a) - parseInt(b));
 
@@ -579,7 +579,7 @@ export function exportToExcel(sections: any, filename: string = 'extracted_data'
       // Only add row if at least one field exists for this sample
       const hasData = sampleId || matrix || comp || startDate || startTime || endDate || endTime || containers || analysis;
       if (hasData) {
-        csvContent += `"${sampleId?.value || ''}","${matrix?.value || ''}","${comp?.value || ''}","${startDate?.value || ''}","${startTime?.value || ''}","${endDate?.value || ''}","${endTime?.value || ''}","${containers?.value || ''}","${analysis?.value || ''}"\n`;
+        csvContent += `"${sampleId?.value || ''}","${sampleId ? Math.round(sampleId.confidence * 100) + '%' : ''}","${matrix?.value || ''}","${matrix ? Math.round(matrix.confidence * 100) + '%' : ''}","${comp?.value || ''}","${comp ? Math.round(comp.confidence * 100) + '%' : ''}","${startDate?.value || ''}","${startDate ? Math.round(startDate.confidence * 100) + '%' : ''}","${startTime?.value || ''}","${startTime ? Math.round(startTime.confidence * 100) + '%' : ''}","${endDate?.value || ''}","${endDate ? Math.round(endDate.confidence * 100) + '%' : ''}","${endTime?.value || ''}","${endTime ? Math.round(endTime.confidence * 100) + '%' : ''}","${containers?.value || ''}","${containers ? Math.round(containers.confidence * 100) + '%' : ''}","${analysis?.value || ''}","${analysis ? Math.round(analysis.confidence * 100) + '%' : ''}"\n`;
       }
     });
   }

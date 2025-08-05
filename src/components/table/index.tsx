@@ -97,7 +97,7 @@ const SampleDataTable: React.FC<{
                   fontWeight: "500",
                   minWidth: "120px",
                   maxWidth: "160px",
-                  width: "30%"
+                  width: "25%"
                 }}>
                   {formatEntityTypeToDisplayName(field.type)}:
                 </label>
@@ -116,6 +116,21 @@ const SampleDataTable: React.FC<{
                     outline: "none"
                   }}
                 />
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                  color: field.confidence >= 0.9 ? "#059669" : field.confidence >= 0.7 ? "#d97706" : "#dc2626",
+                  minWidth: "60px",
+                  padding: "4px 8px",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "4px",
+                  backgroundColor: "#f9fafb"
+                }}>
+                  {Math.round(field.confidence * 100)}%
+                </div>
                 {editable && (
                   <button
                     onClick={() => onRemoveField?.('collectedSampleDataInfo', field.originalIndex)}
@@ -153,14 +168,23 @@ const SampleDataTable: React.FC<{
           <thead>
             <tr style={{ backgroundColor: "#f9fafb" }}>
               <th style={headerStyle}>Customer Sample ID</th>
+              <th style={headerStyle}>Confidence</th>
               <th style={headerStyle}>Matrix</th>
+              <th style={headerStyle}>Confidence</th>
               <th style={headerStyle}>Comp/Grab</th>
+              <th style={headerStyle}>Confidence</th>
               <th style={headerStyle}>Composite Start Date</th>
+              <th style={headerStyle}>Confidence</th>
               <th style={headerStyle}>Composite Start Time</th>
+              <th style={headerStyle}>Confidence</th>
               <th style={headerStyle}>Collected End Date</th>
+              <th style={headerStyle}>Confidence</th>
               <th style={headerStyle}>Collected End Time</th>
+              <th style={headerStyle}>Confidence</th>
               <th style={headerStyle}># Cont</th>
+              <th style={headerStyle}>Confidence</th>
               <th style={headerStyle}>Analysis Request</th>
+              <th style={headerStyle}>Confidence</th>
               {editable && <th style={headerStyle}>Actions</th>}
             </tr>
           </thead>
@@ -195,6 +219,20 @@ const SampleDataTable: React.FC<{
                     )}
                   </td>
                   <td style={cellStyle}>
+                    {sampleId && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        color: sampleId.confidence >= 0.9 ? "#059669" : sampleId.confidence >= 0.7 ? "#d97706" : "#dc2626"
+                      }}>
+                        {Math.round(sampleId.confidence * 100)}%
+                      </div>
+                    )}
+                  </td>
+                  <td style={cellStyle}>
                     {matrix && (
                       <input
                         type="text"
@@ -203,6 +241,20 @@ const SampleDataTable: React.FC<{
                         onChange={(e) => onFieldChange?.('collectedSampleDataInfo', matrix.originalIndex, e.target.value)}
                         style={inputStyle}
                       />
+                    )}
+                  </td>
+                  <td style={cellStyle}>
+                    {matrix && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        color: matrix.confidence >= 0.9 ? "#059669" : matrix.confidence >= 0.7 ? "#d97706" : "#dc2626"
+                      }}>
+                        {Math.round(matrix.confidence * 100)}%
+                      </div>
                     )}
                   </td>
                   <td style={cellStyle}>
@@ -217,6 +269,20 @@ const SampleDataTable: React.FC<{
                     )}
                   </td>
                   <td style={cellStyle}>
+                    {comp && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        color: comp.confidence >= 0.9 ? "#059669" : comp.confidence >= 0.7 ? "#d97706" : "#dc2626"
+                      }}>
+                        {Math.round(comp.confidence * 100)}%
+                      </div>
+                    )}
+                  </td>
+                  <td style={cellStyle}>
                     {startDate && (
                       <input
                         type="text"
@@ -225,6 +291,20 @@ const SampleDataTable: React.FC<{
                         onChange={(e) => onFieldChange?.('collectedSampleDataInfo', startDate.originalIndex, e.target.value)}
                         style={inputStyle}
                       />
+                    )}
+                  </td>
+                  <td style={cellStyle}>
+                    {startDate && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        color: startDate.confidence >= 0.9 ? "#059669" : startDate.confidence >= 0.7 ? "#d97706" : "#dc2626"
+                      }}>
+                        {Math.round(startDate.confidence * 100)}%
+                      </div>
                     )}
                   </td>
                   <td style={cellStyle}>
@@ -239,6 +319,20 @@ const SampleDataTable: React.FC<{
                     )}
                   </td>
                   <td style={cellStyle}>
+                    {startTime && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        color: startTime.confidence >= 0.9 ? "#059669" : startTime.confidence >= 0.7 ? "#d97706" : "#dc2626"
+                      }}>
+                        {Math.round(startTime.confidence * 100)}%
+                      </div>
+                    )}
+                  </td>
+                  <td style={cellStyle}>
                     {endDate && (
                       <input
                         type="text"
@@ -247,6 +341,20 @@ const SampleDataTable: React.FC<{
                         onChange={(e) => onFieldChange?.('collectedSampleDataInfo', endDate.originalIndex, e.target.value)}
                         style={inputStyle}
                       />
+                    )}
+                  </td>
+                  <td style={cellStyle}>
+                    {endDate && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        color: endDate.confidence >= 0.9 ? "#059669" : endDate.confidence >= 0.7 ? "#d97706" : "#dc2626"
+                      }}>
+                        {Math.round(endDate.confidence * 100)}%
+                      </div>
                     )}
                   </td>
                   <td style={cellStyle}>
@@ -261,6 +369,20 @@ const SampleDataTable: React.FC<{
                     )}
                   </td>
                   <td style={cellStyle}>
+                    {endTime && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        color: endTime.confidence >= 0.9 ? "#059669" : endTime.confidence >= 0.7 ? "#d97706" : "#dc2626"
+                      }}>
+                        {Math.round(endTime.confidence * 100)}%
+                      </div>
+                    )}
+                  </td>
+                  <td style={cellStyle}>
                     {containers && (
                       <input
                         type="text"
@@ -272,6 +394,20 @@ const SampleDataTable: React.FC<{
                     )}
                   </td>
                   <td style={cellStyle}>
+                    {containers && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        color: containers.confidence >= 0.9 ? "#059669" : containers.confidence >= 0.7 ? "#d97706" : "#dc2626"
+                      }}>
+                        {Math.round(containers.confidence * 100)}%
+                      </div>
+                    )}
+                  </td>
+                  <td style={cellStyle}>
                     {analysis && (
                       <input
                         type="text"
@@ -280,6 +416,20 @@ const SampleDataTable: React.FC<{
                         onChange={(e) => onFieldChange?.('collectedSampleDataInfo', analysis.originalIndex, e.target.value)}
                         style={inputStyle}
                       />
+                    )}
+                  </td>
+                  <td style={cellStyle}>
+                    {analysis && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        color: analysis.confidence >= 0.9 ? "#059669" : analysis.confidence >= 0.7 ? "#d97706" : "#dc2626"
+                      }}>
+                        {Math.round(analysis.confidence * 100)}%
+                      </div>
                     )}
                   </td>
                   {editable && (
@@ -322,7 +472,7 @@ const SampleDataTable: React.FC<{
               return sampleId || matrix || comp || startDate || startTime || endDate || endTime || containers || analysis;
             }).length === 0 && (
                 <tr>
-                  <td colSpan={editable ? 10 : 9} style={{ ...cellStyle, textAlign: "center", fontStyle: "italic", color: "#6b7280" }}>
+                  <td colSpan={editable ? 19 : 18} style={{ ...cellStyle, textAlign: "center", fontStyle: "italic", color: "#6b7280" }}>
                     No sample data available
                   </td>
                 </tr>
