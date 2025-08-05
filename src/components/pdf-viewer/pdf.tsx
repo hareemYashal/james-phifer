@@ -110,6 +110,7 @@ export default function PdfViewerClient() {
               username={user?.name || "Guest"}
               profile_image_uri={user?.avatar_url || ""}
               handleMyDocuments={() => setActive("documents")}
+              showLabDocumentsButton={role === "admin" || role === "Admin"}
               handlePDFViewer={() => setActive("pdfViewer")}
               handleUserManagement={() => setActive("userManagement")}
               showUserManagementButton={role === "admin" || role === "Admin"}

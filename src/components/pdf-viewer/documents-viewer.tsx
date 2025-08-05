@@ -111,7 +111,7 @@ function DocumentsViewer({
                       marginBottom: "8px",
                     }}
                   >
-                    {doc.id}
+                    COC Document - {doc.id}
                   </li>
                 ))
               )}
