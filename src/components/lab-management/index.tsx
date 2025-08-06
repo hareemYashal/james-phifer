@@ -15,6 +15,7 @@ interface Lab {
 const LabManagement: React.FC = () => {
   const [labs, setLabs] = useState<Lab[]>([]);
   const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [labToDelete, setLabToDelete] = useState<Lab | null>(null);
   const [isAddLabModalOpen, setIsAddLabModalOpen] = useState(false);
@@ -31,12 +32,19 @@ const LabManagement: React.FC = () => {
     const fetchLabs = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from("labs").select("*");
-        if (error) {
-          ShowToast("Error fetching labs. Please try again.");
-          console.error("Error fetching labs:", error);
+        const response = await fetch("/api/labs", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          ShowToast(errorData.error || "Error fetching labs. Please try again.");
+          console.error("Error fetching labs:", errorData.error);
         } else {
-          setLabs(data);
+          const data = await response.json();
+          setLabs(data.labs || []);
         }
       } catch (err) {
         ShowToast("Error fetching labs. Please try again.");
@@ -51,14 +59,19 @@ const LabManagement: React.FC = () => {
 
   const handleRemoveLab = async () => {
     if (!labToDelete) return;
-
+    setDeleteLoading(true);
     try {
-      const { error } = await supabase
-        .from("labs")
-        .delete()
-        .eq("lab_id", labToDelete.lab_id);
-      if (error) {
-        console.error("Error removing lab:", error);
+      const response = await fetch("/api/labs", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ lab_id: labToDelete.lab_id }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        ShowToast(errorData.error || "Error removing lab. Please try again.");
+        console.error("Error removing lab:", errorData.error);
       } else {
         ShowToast("Lab removed successfully");
         setLabs(labs.filter((lab) => lab.lab_id !== labToDelete.lab_id));
@@ -66,13 +79,33 @@ const LabManagement: React.FC = () => {
         setLabToDelete(null);
       }
     } catch (err) {
+      ShowToast("Error removing lab. Please try again.");
       console.error("Error:", err);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
   const refreshLabs = async () => {
-    const { data, error } = await supabase.from("labs").select("*");
-    if (!error) setLabs(data);
+    try {
+      const response = await fetch("/api/labs", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        ShowToast(errorData.error || "Error fetching labs. Please try again.");
+        console.error("Error fetching labs:", errorData.error);
+      } else {
+        const data = await response.json();
+        setLabs(data.labs || []);
+      }
+    } catch (err) {
+      ShowToast("Error fetching labs. Please try again.");
+      console.error("Error:", err);
+    }
   };
 
   const openModal = (lab: Lab) => {
@@ -188,6 +221,7 @@ const LabManagement: React.FC = () => {
         onClose={closeModal}
         onConfirm={handleRemoveLab}
         name={labToDelete?.name}
+        deleteLoading={deleteLoading}
       />
       <AddLabModal
         isOpen={isAddLabModalOpen}

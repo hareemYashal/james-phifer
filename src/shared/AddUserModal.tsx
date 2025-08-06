@@ -23,19 +23,23 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
   useEffect(() => {
     const fetchLabs = async () => {
       try {
-        const { data, error } = await supabase
-          .from("labs")
-          .select("lab_id, name");
-        if (error) {
-          console.error("Error fetching labs:", error);
+        const response = await fetch("/api/labs", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Error fetching labs:", errorData.error);
         } else {
-          setLabs(data);
+          const data = await response.json();
+          setLabs(data.labs || []);
         }
       } catch (err) {
         console.error("Error:", err);
       }
     };
-
     fetchLabs();
   }, []);
 
@@ -44,15 +48,19 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
       alert("Please fill all fields.");
       return;
     }
-
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from("users_lab")
-        .insert([{ lab_id: labId, email, role }]);
-      if (error) {
-        console.log("Error adding user:", error);
-        ShowToast(error.details || "Error adding user. Please try again.");
+      const response = await fetch("/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ lab_id: labId, email, role }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.log("Error adding user:", errorData.error);
+        ShowToast(errorData.error || "Error adding user. Please try again.");
       } else {
         ShowToast("User added successfully!");
         setEmail("");

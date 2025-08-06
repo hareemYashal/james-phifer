@@ -71,6 +71,7 @@ export default function PdfViewerClient() {
         }
 
         const data = await response.json();
+        console.log("Documents DATA", data);
         setDocuments(data.documents || []);
       } catch (error) {
         console.error("Error fetching documents:", error);
@@ -79,7 +80,7 @@ export default function PdfViewerClient() {
       }
     };
 
-    if (user) {
+    if (user && activeTab === "documents") {
       fetchDocuments();
     }
   }, [user, activeTab]);

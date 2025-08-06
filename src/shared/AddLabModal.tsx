@@ -25,10 +25,17 @@ const AddLabModal: React.FC<AddLabModalProps> = ({
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("labs").insert([{ name: labName }]);
-      if (error) {
-        console.error("Error adding lab:", error);
-        ShowToast("Error adding lab. Please try again.");
+      const response = await fetch("/api/labs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: labName }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error adding lab:", errorData.error);
+        ShowToast(errorData.error || "Error adding lab. Please try again.");
       } else {
         ShowToast("Lab added successfully!");
         setLabName("");
