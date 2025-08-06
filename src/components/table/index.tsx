@@ -17,6 +17,11 @@ const SampleDataTable: React.FC<{
     const type = item.type;
     let sampleNumber = '';
 
+    // Debug log to see what fields we're processing
+    if (type.includes('matrix')) {
+      console.log('Processing matrix field:', type, 'value:', item.value);
+    }
+
     // Extract sample number from field type
     if (type.includes('customer_sample_id_')) {
       const match = type.match(/customer_sample_id_(\d+)(?:_.*)?/);
@@ -43,6 +48,11 @@ const SampleDataTable: React.FC<{
         groupedSamples[sampleNumber] = {};
       }
       groupedSamples[sampleNumber][type] = { ...item, originalIndex: index };
+
+      // Debug log for matrix fields specifically
+      if (type.includes('matrix')) {
+        console.log(`Grouped matrix field ${type} into sample ${sampleNumber}:`, item.value);
+      }
     }
   });
 
@@ -193,6 +203,14 @@ const SampleDataTable: React.FC<{
               const sample = groupedSamples[sampleNum];
               const sampleId = sample[`customer_sample_id_${sampleNum}`];
               const matrix = sample[`customer_sample_id_${sampleNum}_matrix`];
+
+              // Debug log for this sample
+              console.log(`Sample ${sampleNum}:`, {
+                sampleId: sampleId?.value,
+                matrix: matrix?.value,
+                allFields: Object.keys(sample)
+              });
+
               const comp = sample[`customer_sample_id_${sampleNum}_comp`];
               const startDate = sample[`customer_sample_id_${sampleNum}_start_date`];
               const startTime = sample[`customer_sample_id_${sampleNum}_start_time`];

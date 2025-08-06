@@ -23,6 +23,7 @@ function UserManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const usersPerPage = 10;
   const indexOfLastUser = currentPage * usersPerPage;
@@ -35,15 +36,19 @@ function UserManagement() {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("users_lab")
-          .select("id, email, role, lab_id, labs(name)");
-
-        if (error) {
-          ShowToast("Error fetching users. Please try again.");
-          console.log("Error fetching users:", error);
+        const response = await fetch("/api/users", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          ShowToast(errorData.error || "Error fetching users. Please try again.");
+          console.log("Error fetching users:", errorData.error);
         } else {
-          setUsers(data);
+          const data = await response.json();
+          setUsers(data.users || []);
         }
       } catch (err) {
         ShowToast("Error fetching users. Please try again.");
@@ -58,14 +63,19 @@ function UserManagement() {
 
   const handleRemoveUser = async () => {
     if (!userToDelete) return;
-
+    setDeleteLoading(true);
     try {
-      const { error } = await supabase
-        .from("users_lab")
-        .delete()
-        .eq("id", userToDelete.id);
-      if (error) {
-        console.error("Error removing user:", error);
+      const response = await fetch("/api/users", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: userToDelete.id }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        ShowToast(errorData.error || "Error removing user. Please try again.");
+        console.error("Error removing user:", errorData.error);
       } else {
         ShowToast("User removed successfully");
         setUsers(users.filter((user) => user.id !== userToDelete.id));
@@ -73,15 +83,33 @@ function UserManagement() {
         setUserToDelete(null);
       }
     } catch (err) {
+      ShowToast("Error removing user. Please try again.");
       console.error("Error:", err);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
   const refreshUsers = async () => {
-    const { data, error } = await supabase
-      .from("users_lab")
-      .select("id, email, role, lab_id, labs(name)");
-    if (!error) setUsers(data);
+    try {
+      const response = await fetch("/api/users", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        ShowToast(errorData.error || "Error fetching users. Please try again.");
+        console.log("Error fetching users:", errorData.error);
+      } else {
+        const data = await response.json();
+        setUsers(data.users || []);
+      }
+    } catch (err) {
+      ShowToast("Error fetching users. Please try again.");
+      console.log("Error:", err);
+    }
   };
 
   const openModal = (user: User) => {
@@ -222,6 +250,7 @@ function UserManagement() {
         onClose={closeModal}
         onConfirm={handleRemoveUser}
         name={userToDelete?.email}
+        deleteLoading={deleteLoading}
       />
       <AddUserModal
         isOpen={isAddUserModalOpen}

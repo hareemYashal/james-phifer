@@ -6,6 +6,7 @@ interface DeleteConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   name?: string;
+  deleteLoading?: boolean;
 }
 
 const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
@@ -13,6 +14,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   onClose,
   onConfirm,
   name,
+  deleteLoading
 }) => {
   if (!isOpen) return null;
 
@@ -60,6 +62,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
         </p>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <button
+            disabled={deleteLoading}
             style={{
               padding: "10px 20px",
               backgroundColor: "#f44336",
@@ -70,9 +73,10 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             }}
             onClick={onConfirm}
           >
-            Delete
+            {deleteLoading ? "Deleting..." : "Delete"}
           </button>
           <button
+            disabled={deleteLoading}
             style={{
               padding: "10px 20px",
               backgroundColor: "#e5e7eb",
