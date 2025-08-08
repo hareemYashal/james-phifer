@@ -227,8 +227,53 @@ export function isCommonWord(text: string): boolean {
   return commonWords.includes(text.toLowerCase()) || text.length < 2;
 }
 
-// Helper function to convert entity type to display name
+// Efficient entity type to display name mapping for optimal performance
+const ENTITY_TYPE_DISPLAY_MAPPING: Record<string, string> = {
+  // 1) Company & Location Information
+  'location_requested': 'City/State',
+  'company_name': 'Company Name',
+  'street_address': 'Street Address',
+  'customer_project_no': 'Customer Project #',
+  'project_name': 'Project Name',
+  'site_collection_info': 'Site Collection Info/ Faculty ID ( as applicable )',
+
+  // 2) Contact & Project Information
+  'contact_to': 'Contact/Report To',
+  'phone_number': 'Phone #',
+  'cc_email': 'E-Mail',
+  'invoice_to': 'Invoice to',
+  'invoice_email': 'Invoice E-mail',
+  'purchase_order_no': 'Purchase Order # ( if applicable )',
+  'quote_no': 'Quote #',
+  'country_state_origin': 'Country/ State origin of sample(s)',
+  'regulatory_program': 'Regulatory Program ( DW, RCRA, etc ) as applicable',
+  'additional_instructions_from_pace': 'Additional Instructions from pace',
+
+  // 3) Data Deliverables
+  'date_deliverables_level2': 'Level II',
+  'date_deliverables_level3': 'Level III',
+  'date_deliverables_level4': 'Level IV',
+  'date_deliverables_equis': 'EQUIS',
+  'date_deliverables_other': 'Others',
+  'date_result': 'Date Results Requested',
+
+  // 4) Container Information
+  'container_size': 'Specify Container Size',
+  'container_preservative_tyoe': 'Identify Container Preservative Type',
+
+  // 5) Collected Sample Data Information and Analysis Request (first 2 values)
+  'collected_name': 'Collected By:',
+  'collector_signature': 'Signature'
+};
+
+// Helper function to convert entity type to display name with efficient lookup
 export function formatEntityTypeToDisplayName(entityType: string): string {
+  // Use mapping for specified entities, fallback to original formatting for others
+  if (ENTITY_TYPE_DISPLAY_MAPPING[entityType]) {
+    return ENTITY_TYPE_DISPLAY_MAPPING[entityType];
+  }
+
+  // Fallback to original formatting for unmapped entities
   return entityType
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (l: string) => l.toUpperCase())
@@ -301,16 +346,16 @@ export function categorizeEntitiesIntoSections(entities: any[]): {
     collectedSampleDataInfo: [] as any[]
   };
 
-  // Define exact field mappings for each section
+  // Define exact field mappings for each section (in desired display order)
   const sectionMapping = {
     // 1) Company & Location Information
     companyLocationInfo: [
       'location_requested',
       'company_name',
       'street_address',
+      'customer_project_no',
       'project_name',
-      'site_collection_info',
-      'customer_project_no'
+      'site_collection_info'
     ],
 
     // 2) Contact & Project Information
@@ -329,12 +374,12 @@ export function categorizeEntitiesIntoSections(entities: any[]): {
 
     // 3) Data Deliverables
     dataDeliverables: [
-      'date_result',
       'date_deliverables_level2',
       'date_deliverables_level3',
       'date_deliverables_level4',
       'date_deliverables_equis',
-      'date_deliverables_other'
+      'date_deliverables_other',
+      'date_result'
     ],
 
     // 4) Container Information
@@ -464,14 +509,34 @@ export function categorizeEntitiesIntoSections(entities: any[]): {
     // No default fallback - only show fields that are explicitly categorized
   });
 
-  return sections;
+  // Sort each section by predefined order for consistent display (O(n log n) but only once)
+  // This maintains the exact order you specified without affecting performance significantly
+  const sortByPredefinedOrder = (sectionKey: keyof typeof sectionMapping, items: any[]) => {
+    const orderMap = sectionMapping[sectionKey];
+    return items.sort((a, b) => {
+      const indexA = orderMap.indexOf(a.type);
+      const indexB = orderMap.indexOf(b.type);
+      return indexA - indexB;
+    });
+  };
+
+  return {
+    companyLocationInfo: sortByPredefinedOrder('companyLocationInfo', sections.companyLocationInfo),
+    contactProjectInfo: sortByPredefinedOrder('contactProjectInfo', sections.contactProjectInfo),
+    dataDeliverables: sortByPredefinedOrder('dataDeliverables', sections.dataDeliverables),
+    containerInfo: sortByPredefinedOrder('containerInfo', sections.containerInfo),
+    collectedSampleDataInfo: sortByPredefinedOrder('collectedSampleDataInfo', sections.collectedSampleDataInfo)
+  };
 }
 
 // Helper function to export data to Excel format (CSV for now, can be enhanced)
+// NOTE: This function now automatically uses the same mapping and ordering as the UI
+// because it uses formatEntityTypeToDisplayName() and receives pre-sorted sections
 export function exportToExcel(sections: any, filename: string = 'extracted_data') {
   let csvContent = '';
 
   // Add Company & Location Information Section
+  // Fields will appear in exact same order as UI: location_requested, company_name, street_address, customer_project_no, project_name, site_collection_info
   csvContent += 'COMPANY & LOCATION INFORMATION\n';
   csvContent += 'Field,Value,Confidence\n';
   sections.companyLocationInfo.forEach((item: any) => {
@@ -480,7 +545,8 @@ export function exportToExcel(sections: any, filename: string = 'extracted_data'
   });
   csvContent += '\n';
 
-  // Add Contact & Project Information Section
+  // Add Contact & Project Information Section  
+  // Fields will appear in exact same order as UI
   csvContent += 'CONTACT & PROJECT INFORMATION\n';
   csvContent += 'Field,Value,Confidence\n';
   sections.contactProjectInfo.forEach((item: any) => {
@@ -490,6 +556,7 @@ export function exportToExcel(sections: any, filename: string = 'extracted_data'
   csvContent += '\n';
 
   // Add Data Deliverables Section
+  // Fields will appear in exact same order as UI: level2, level3, level4, equis, other, date_result
   csvContent += 'DATA DELIVERABLES\n';
   csvContent += 'Field,Value,Confidence\n';
   sections.dataDeliverables.forEach((item: any) => {
@@ -499,6 +566,7 @@ export function exportToExcel(sections: any, filename: string = 'extracted_data'
   csvContent += '\n';
 
   // Add Container Information Section
+  // Fields will appear in exact same order as UI
   csvContent += 'CONTAINER INFORMATION\n';
   csvContent += 'Field,Value,Confidence\n';
   sections.containerInfo.forEach((item: any) => {
@@ -560,7 +628,7 @@ export function exportToExcel(sections: any, filename: string = 'extracted_data'
   // Add sample data in table format
   if (Object.keys(groupedSamples).length > 0) {
     csvContent += 'Sample Data Table:\n';
-    csvContent += '"Customer Sample ID","Confidence","Matrix","Confidence","Comp/Grab","Confidence","Composite Start Date","Confidence","Composite Start Time","Confidence","Collected End Date","Confidence","Collected End Time","Confidence","# Cont","Confidence","Analysis Request","Confidence"\n';
+    csvContent += '"Customer Sample ID","Confidence","Matrix","Confidence","Comp/Grab","Confidence","Composite Start(Date)","Confidence","Composite Start(Time)","Confidence","Collected or Composite End(Date)","Confidence","Collected or Composite End(Time)","Confidence","# Cont","Confidence","Analysis Request","Confidence"\n';
 
     const sampleNumbers = Object.keys(groupedSamples).sort((a, b) => parseInt(a) - parseInt(b));
 

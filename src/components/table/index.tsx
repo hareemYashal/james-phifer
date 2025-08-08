@@ -106,8 +106,9 @@ const SampleDataTable: React.FC<{
                   fontSize: "12px",
                   fontWeight: "500",
                   minWidth: "120px",
+                  color: "#374151",
                   maxWidth: "160px",
-                  width: "25%"
+                  width: "25%",
                 }}>
                   {formatEntityTypeToDisplayName(field.type)}:
                 </label>
@@ -177,25 +178,25 @@ const SampleDataTable: React.FC<{
         }}>
           <thead>
             <tr style={{ backgroundColor: "#f9fafb" }}>
-              <th style={headerStyle}>Customer Sample ID</th>
-              <th style={headerStyle}>Confidence</th>
-              <th style={headerStyle}>Matrix</th>
-              <th style={headerStyle}>Confidence</th>
-              <th style={headerStyle}>Comp/Grab</th>
-              <th style={headerStyle}>Confidence</th>
-              <th style={headerStyle}>Composite Start Date</th>
-              <th style={headerStyle}>Confidence</th>
-              <th style={headerStyle}>Composite Start Time</th>
-              <th style={headerStyle}>Confidence</th>
-              <th style={headerStyle}>Collected End Date</th>
-              <th style={headerStyle}>Confidence</th>
-              <th style={headerStyle}>Collected End Time</th>
-              <th style={headerStyle}>Confidence</th>
-              <th style={headerStyle}># Cont</th>
-              <th style={headerStyle}>Confidence</th>
-              <th style={headerStyle}>Analysis Request</th>
-              <th style={headerStyle}>Confidence</th>
-              {editable && <th style={headerStyle}>Actions</th>}
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "140px" }}>Customer Sample ID</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Confidence</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Matrix</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Confidence</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Comp/<br></br> Grab</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Confidence</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "140px" }}>Composite Start(Date)</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Confidence</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "140px" }}>Composite Start(Time)</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Confidence</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "180px" }}>Collected or Composite End(Date)</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Confidence</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "180px" }}>Collected or Composite End(Time)</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Confidence</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, }}># Cont</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Confidence</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "100px" }}>Analysis Request</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Confidence</th>
+              {editable && <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -512,6 +513,10 @@ const headerStyle: React.CSSProperties = {
   color: "#374151",
   textAlign: "left",
   minWidth: "80px"
+};
+
+const additionalheaderStyle: React.CSSProperties = {
+  textAlign: "center",
 };
 
 const cellStyle: React.CSSProperties = {
