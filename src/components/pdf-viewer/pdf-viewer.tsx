@@ -486,6 +486,10 @@ export default function FormParserInterface() {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
+
+    // Reset the input value immediately to allow selecting the same file again
+    e.target.value = '';
+
     if (!selectedFile) return;
 
     // Validate file type
@@ -1259,9 +1263,13 @@ export default function FormParserInterface() {
                   style={{ display: "flex", alignItems: "center", gap: "8px" }}
                 >
                   <button
-                    onClick={() =>
-                      document.getElementById("file-input")?.click()
-                    }
+                    onClick={() => {
+                      const fileInput = document.getElementById("file-input") as HTMLInputElement;
+                      if (fileInput) {
+                        fileInput.value = '';
+                        fileInput.click();
+                      }
+                    }}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -1426,7 +1434,13 @@ export default function FormParserInterface() {
                   automatically
                 </p> */}
                 <button
-                  onClick={() => document.getElementById("file-input")?.click()}
+                  onClick={() => {
+                    const fileInput = document.getElementById("file-input") as HTMLInputElement;
+                    if (fileInput) {
+                      fileInput.value = '';
+                      fileInput.click();
+                    }
+                  }}
                   style={{
                     backgroundColor: "#3b82f6",
                     color: "white",
