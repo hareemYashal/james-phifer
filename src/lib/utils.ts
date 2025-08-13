@@ -481,7 +481,40 @@ export function categorizeEntitiesIntoSections(entities: any[]): {
       'analysis_request_7',
       'analysis_request_8',
       'analysis_request_9',
-      'analysis_request_10'
+      'analysis_request_10',
+      'Sample01_analysis01',
+      'Sample01_analysis02',
+      'Sample01_analysis03',
+      'Sample01_analysis04',
+      'Sample01_analysis05',
+      'Sample01_analysis06',
+      'Sample01_analysis07',
+      'Sample01_analysis08',
+      'Sample01_analysis09',
+      'Sample01_analysis10',
+      'Sample02_analysis01',
+      'Sample02_analysis02',
+      'Sample02_analysis03',
+      'Sample02_analysis04',
+      'Sample02_analysis05',
+      'Sample02_analysis06',
+      'Sample02_analysis07',
+      'Sample02_analysis08',
+      'Sample02_analysis09',
+      'Sample02_analysis10',
+      'Sample03_analysis01',
+      'Sample03_analysis02',
+      'Sample03_analysis03',
+      'Sample03_analysis04',
+      'Sample03_analysis06',
+      'Sample03_analysis07',
+      'Sample03_analysis08',
+      'Sample03_analysis09',
+      'Sample03_analysis10',
+      'Sample04_analysis01',
+      'Sample04_analysis02',
+      'Sample04_analysis03',
+      'Sample04_analysis04',
     ]
   };
 
@@ -602,6 +635,12 @@ export function exportToExcel(sections: any, filename: string = 'extracted_data'
       if (match) {
         sampleNumber = match[1];
       }
+    } else if (type.match(/^Sample\d{2}_analysis\d{1,2}$/)) {
+      // Handle Sample01_analysis01, Sample02_analysis02, etc.
+      const match = type.match(/^Sample(\d{2})_analysis\d{1,2}$/);
+      if (match) {
+        sampleNumber = match[1];
+      }
     } else {
       // Handle non-sample specific fields like collected_name, collector_signature
       nonSampleFields.push(item);
@@ -628,7 +667,7 @@ export function exportToExcel(sections: any, filename: string = 'extracted_data'
   // Add sample data in table format
   if (Object.keys(groupedSamples).length > 0) {
     csvContent += 'Sample Data Table:\n';
-    csvContent += '"Customer Sample ID","Confidence","Matrix","Confidence","Comp/Grab","Confidence","Composite Start(Date)","Confidence","Composite Start(Time)","Confidence","Collected or Composite End(Date)","Confidence","Collected or Composite End(Time)","Confidence","# Cont","Confidence","Analysis Request","Confidence"\n';
+    csvContent += '"Customer Sample ID","Confidence","Matrix","Confidence","Comp/Grab","Confidence","Composite Start(Date)","Confidence","Composite Start(Time)","Confidence","Collected or Composite End(Date)","Confidence","Collected or Composite End(Time)","Confidence","# Cont","Confidence","Analysis Request","Confidence","Checkbox Column-1","Checkbox Column-2","Checkbox Column-3","Checkbox Column-4","Checkbox Column-5","Checkbox Column-6","Checkbox Column-7","Checkbox Column-8","Checkbox Column-9","Checkbox Column-10"\n';
 
     const sampleNumbers = Object.keys(groupedSamples).sort((a, b) => parseInt(a) - parseInt(b));
 
@@ -644,10 +683,22 @@ export function exportToExcel(sections: any, filename: string = 'extracted_data'
       const containers = sample[`sample_id_${sampleNum}_no_of_container`];
       const analysis = sample[`analysis_request_${sampleNum}`];
 
+      // Generate checkbox columns (01-10)
+      const checkboxColumns = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10'].map(analysisNum => {
+        const fieldType = `Sample${sampleNum.padStart(2, '0')}_analysis${analysisNum}`;
+        // First try the current sample, then try the padded version (same logic as UI)
+        let analysisField = sample[fieldType];
+        if (!analysisField && groupedSamples[sampleNum.padStart(2, '0')]) {
+          analysisField = groupedSamples[sampleNum.padStart(2, '0')][fieldType];
+        }
+        const isChecked = analysisField && analysisField.value;
+        return isChecked ? '✓' : '';
+      });
+
       // Only add row if at least one field exists for this sample
       const hasData = sampleId || matrix || comp || startDate || startTime || endDate || endTime || containers || analysis;
       if (hasData) {
-        csvContent += `"${sampleId?.value || ''}","${sampleId ? Math.round(sampleId.confidence * 100) + '%' : ''}","${matrix?.value || ''}","${matrix ? Math.round(matrix.confidence * 100) + '%' : ''}","${comp?.value || ''}","${comp ? Math.round(comp.confidence * 100) + '%' : ''}","${startDate?.value || ''}","${startDate ? Math.round(startDate.confidence * 100) + '%' : ''}","${startTime?.value || ''}","${startTime ? Math.round(startTime.confidence * 100) + '%' : ''}","${endDate?.value || ''}","${endDate ? Math.round(endDate.confidence * 100) + '%' : ''}","${endTime?.value || ''}","${endTime ? Math.round(endTime.confidence * 100) + '%' : ''}","${containers?.value || ''}","${containers ? Math.round(containers.confidence * 100) + '%' : ''}","${analysis?.value || ''}","${analysis ? Math.round(analysis.confidence * 100) + '%' : ''}"\n`;
+        csvContent += `"${sampleId?.value || ''}","${sampleId ? Math.round(sampleId.confidence * 100) + '%' : ''}","${matrix?.value || ''}","${matrix ? Math.round(matrix.confidence * 100) + '%' : ''}","${comp?.value || ''}","${comp ? Math.round(comp.confidence * 100) + '%' : ''}","${startDate?.value || ''}","${startDate ? Math.round(startDate.confidence * 100) + '%' : ''}","${startTime?.value || ''}","${startTime ? Math.round(startTime.confidence * 100) + '%' : ''}","${endDate?.value || ''}","${endDate ? Math.round(endDate.confidence * 100) + '%' : ''}","${endTime?.value || ''}","${endTime ? Math.round(endTime.confidence * 100) + '%' : ''}","${containers?.value || ''}","${containers ? Math.round(containers.confidence * 100) + '%' : ''}","${analysis?.value || ''}","${analysis ? Math.round(analysis.confidence * 100) + '%' : ''}","${checkboxColumns.join('","')}"\n`;
       }
     });
   }

@@ -113,6 +113,7 @@ function parseAPIResponse(apiData: any): {
     if (apiData.entities && Array.isArray(apiData.entities)) {
       // Categorize entities into sections for spreadsheet view
       sections = categorizeEntitiesIntoSections(apiData.entities);
+      // console.log("ALL DATA IN SECTIONS", sections);
 
       apiData.entities.forEach((entity: any, index: number) => {
         if (entity.type && entity.value) {
@@ -594,6 +595,22 @@ export default function FormParserInterface() {
 
   // Handlers for spreadsheet view sections
   const handleSectionFieldChange = (sectionType: string, index: number, value: string) => {
+    // Handle special case for creating new analysis fields (index = -1)
+    if (index === -1 && value.includes(':checked')) {
+      const fieldType = value.split(':')[0];
+      const newItem = {
+        type: fieldType,
+        value: 'checked',
+        confidence: 1.0
+      };
+
+      setCategorizedSections(prev => ({
+        ...prev,
+        [sectionType]: [...prev[sectionType as keyof typeof prev], newItem]
+      }));
+      return;
+    }
+
     setCategorizedSections(prev => ({
       ...prev,
       [sectionType]: prev[sectionType as keyof typeof prev].map((item, idx) =>
