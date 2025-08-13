@@ -12,15 +12,11 @@ const SampleDataTable: React.FC<{
   // Group items by sample number (1-10) and separate non-sample fields
   const groupedSamples: Record<string, any> = {};
   const nonSampleFields: any[] = [];
+  // console.log("H-> All Items 🎍🎍🎍", items);
 
   items.forEach((item, index) => {
     const type = item.type;
     let sampleNumber = '';
-
-    // Debug log to see what fields we're processing
-    if (type.includes('matrix')) {
-      console.log('Processing matrix field:', type, 'value:', item.value);
-    }
 
     // Extract sample number from field type
     if (type.includes('customer_sample_id_')) {
@@ -38,6 +34,12 @@ const SampleDataTable: React.FC<{
       if (match) {
         sampleNumber = match[1];
       }
+    } else if (type.match(/^Sample\d{2}_analysis\d{1,2}$/)) {
+      // Handle Sample01_analysis01, Sample02_analysis02, etc.
+      const match = type.match(/^Sample(\d{2})_analysis\d{1,2}$/);
+      if (match) {
+        sampleNumber = match[1];
+      }
     } else {
       // Handle non-sample specific fields like collected_name, collector_signature
       nonSampleFields.push({ ...item, originalIndex: index });
@@ -48,11 +50,6 @@ const SampleDataTable: React.FC<{
         groupedSamples[sampleNumber] = {};
       }
       groupedSamples[sampleNumber][type] = { ...item, originalIndex: index };
-
-      // Debug log for matrix fields specifically
-      if (type.includes('matrix')) {
-        console.log(`Grouped matrix field ${type} into sample ${sampleNumber}:`, item.value);
-      }
     }
   });
 
@@ -196,6 +193,16 @@ const SampleDataTable: React.FC<{
               <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Confidence</th>
               <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "100px" }}>Analysis Request</th>
               <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Confidence</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "80px" }}>Checkbox Column-1</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "80px" }}>Checkbox Column-2</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "80px" }}>Checkbox Column-3</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "80px" }}>Checkbox Column-4</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "80px" }}>Checkbox Column-5</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "80px" }}>Checkbox Column-6</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "80px" }}>Checkbox Column-7</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "80px" }}>Checkbox Column-8</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "80px" }}>Checkbox Column-9</th>
+              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "80px" }}>Checkbox Column-10</th>
               {editable && <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Actions</th>}
             </tr>
           </thead>
@@ -206,11 +213,11 @@ const SampleDataTable: React.FC<{
               const matrix = sample[`customer_sample_id_${sampleNum}_matrix`];
 
               // Debug log for this sample
-              console.log(`Sample ${sampleNum}:`, {
-                sampleId: sampleId?.value,
-                matrix: matrix?.value,
-                allFields: Object.keys(sample)
-              });
+              // console.log(`Sample ${sampleNum}:`, {
+              //   sampleId: sampleId?.value,
+              //   matrix: matrix?.value,
+              //   allFields: Object.keys(sample)
+              // });
 
               const comp = sample[`customer_sample_id_${sampleNum}_comp`];
               const startDate = sample[`customer_sample_id_${sampleNum}_start_date`];
@@ -451,6 +458,50 @@ const SampleDataTable: React.FC<{
                       </div>
                     )}
                   </td>
+                  {/* Analysis Checkboxes 01-10 */}
+                  {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10'].map(analysisNum => {
+                    const fieldType = `Sample${sampleNum.padStart(2, '0')}_analysis${analysisNum}`;
+                    // First try the current sample, then try the padded version
+                    let analysisField = sample[fieldType];
+                    if (!analysisField && groupedSamples[sampleNum.padStart(2, '0')]) {
+                      analysisField = groupedSamples[sampleNum.padStart(2, '0')][fieldType];
+                    }
+                    const isChecked = analysisField && analysisField.value;
+
+                    return (
+                      <td key={`${sampleNum}-analysis-${analysisNum}`} style={cellStyle}>
+                        <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center"
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            disabled={!editable}
+                            onChange={(e) => {
+                              if (e.target.checked && !analysisField) {
+                                // Create new field - use a special value format that parent can handle
+                                onFieldChange?.('collectedSampleDataInfo', -1, `${fieldType}:checked`);
+                              } else if (!e.target.checked && analysisField) {
+                                // Remove existing field
+                                onRemoveField?.('collectedSampleDataInfo', analysisField.originalIndex);
+                              } else if (e.target.checked && analysisField) {
+                                // Update existing field
+                                onFieldChange?.('collectedSampleDataInfo', analysisField.originalIndex, 'checked');
+                              }
+                            }}
+                            style={{
+                              width: "16px",
+                              height: "16px",
+                              cursor: editable ? "pointer" : "default",
+                              accentColor: "#3b82f6"
+                            }}
+                          />
+                        </div>
+                      </td>
+                    );
+                  })}
                   {editable && (
                     <td style={cellStyle}>
                       <button
@@ -491,7 +542,7 @@ const SampleDataTable: React.FC<{
               return sampleId || matrix || comp || startDate || startTime || endDate || endTime || containers || analysis;
             }).length === 0 && (
                 <tr>
-                  <td colSpan={editable ? 19 : 18} style={{ ...cellStyle, textAlign: "center", fontStyle: "italic", color: "#6b7280" }}>
+                  <td colSpan={editable ? 29 : 28} style={{ ...cellStyle, textAlign: "center", fontStyle: "italic", color: "#6b7280" }}>
                     No sample data available
                   </td>
                 </tr>
@@ -687,6 +738,224 @@ export const SpreadsheetView: React.FC<SpreadsheetViewProps> = ({
   onRemoveField,
   editable = true,
 }) => {
+  const testSampleData = [
+
+    {
+      "type": "Sample01_analysis01",
+      "value": "true",
+      "confidence": 0.9881,
+      "normalized_value": null
+    },
+
+    {
+      "type": "Sample01_analysis02",
+      "value": "true",
+      "confidence": 0.9881,
+      "normalized_value": null
+    },
+
+    {
+      "type": "Sample01_analysis06",
+      "value": "true",
+      "confidence": 0.9881,
+      "normalized_value": null
+    },
+
+    {
+      "type": "Sample02_analysis06",
+      "value": "true",
+      "confidence": 0.9881,
+      "normalized_value": null
+    },
+
+    {
+      "type": "Sample02_analysis09",
+      "value": "true",
+      "confidence": 0.9881,
+      "normalized_value": null
+    },
+
+    {
+      "type": "collected_name",
+      "value": "Ted Jeffcoat",
+      "confidence": 0.9881,
+      "normalized_value": null
+    },
+    {
+      "type": "collector_signature",
+      "value": "Tel Jeffcuet",
+      "confidence": 0.9425,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_1",
+      "value": "MW-01",
+      "confidence": 0.9999,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_2",
+      "value": "MW-02",
+      "confidence": 1,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_3",
+      "value": "MW\n-\n22",
+      "confidence": 0.7072,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_4",
+      "value": "Sw\n-\n12",
+      "confidence": 0.999,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_5",
+      "value": "Sw\n-\n32",
+      "confidence": 0.9993,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_6",
+      "value": "SS-01",
+      "confidence": 0.9997,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_1_comp",
+      "value": "GW G",
+      "confidence": 0.4441,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_2_comp",
+      "value": "GWG",
+      "confidence": 0.9998,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_3_comp",
+      "value": "GWG",
+      "confidence": 1,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_4_comp",
+      "value": "SWG",
+      "confidence": 0.9999,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_5_comp",
+      "value": "SWG",
+      "confidence": 1,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_6_comp",
+      "value": "SSC",
+      "confidence": 0.9982,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_1_end_date",
+      "value": "4-6-24",
+      "confidence": 0.9989,
+      "normalized_value": "2024-04-06"
+    },
+    {
+      "type": "customer_sample_id_2_end_date",
+      "value": "4-6-24",
+      "confidence": 1,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_3_end_date",
+      "value": "4-6-24",
+      "confidence": 0.6044,
+      "normalized_value": "2024-04-06"
+    },
+    {
+      "type": "customer_sample_id_4_end_date",
+      "value": "4-6-24",
+      "confidence": 1,
+      "normalized_value": "2024-04-06"
+    },
+    {
+      "type": "customer_sample_id_5_end_date",
+      "value": "4-6-24",
+      "confidence": 1,
+      "normalized_value": "2024-04-06"
+    },
+    {
+      "type": "customer_sample_id_6_end_date",
+      "value": "4-7-24",
+      "confidence": 1,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_1_end_time",
+      "value": "8:00",
+      "confidence": 0.9999,
+      "normalized_value": ""
+    },
+    {
+      "type": "customer_sample_id_2_end_time",
+      "value": "8:15",
+      "confidence": 1,
+      "normalized_value": ""
+    },
+    {
+      "type": "customer_sample_id_3_end_time",
+      "value": "8:30",
+      "confidence": 1,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_4_end_time",
+      "value": "9:00",
+      "confidence": 1,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_5_end_time",
+      "value": "9:30",
+      "confidence": 1,
+      "normalized_value": null
+    },
+    {
+      "type": "customer_sample_id_6_end_time",
+      "value": "11:00",
+      "confidence": 1,
+      "normalized_value": null
+    },
+    {
+      "type": "analysis_request_1",
+      "value": "TCL 8260",
+      "confidence": 0.9921,
+      "normalized_value": null
+    },
+    {
+      "type": "analysis_request_2",
+      "value": "TCL 8270",
+      "confidence": 0.9994,
+      "normalized_value": null
+    },
+    {
+      "type": "analysis_request_3",
+      "value": "TAL 6020",
+      "confidence": 0.9708,
+      "normalized_value": null
+    },
+    {
+      "type": "analysis_request_4",
+      "value": "8015",
+      "confidence": 0.9997,
+      "normalized_value": null
+    }
+  ]
   return (
     <div style={{
       padding: "16px",
