@@ -595,22 +595,6 @@ export default function FormParserInterface() {
 
   // Handlers for spreadsheet view sections
   const handleSectionFieldChange = (sectionType: string, index: number, value: string) => {
-    // Handle special case for creating new analysis fields (index = -1)
-    if (index === -1 && value.includes(':checked')) {
-      const fieldType = value.split(':')[0];
-      const newItem = {
-        type: fieldType,
-        value: 'checked',
-        confidence: 1.0
-      };
-
-      setCategorizedSections(prev => ({
-        ...prev,
-        [sectionType]: [...prev[sectionType as keyof typeof prev], newItem]
-      }));
-      return;
-    }
-
     setCategorizedSections(prev => ({
       ...prev,
       [sectionType]: prev[sectionType as keyof typeof prev].map((item, idx) =>
@@ -636,7 +620,14 @@ export default function FormParserInterface() {
   };
 
   const handleSectionRemoveField = (sectionType: string, index: number) => {
-    const itemToRemove = categorizedSections[sectionType as keyof typeof categorizedSections][index];
+    const sectionData = categorizedSections[sectionType as keyof typeof categorizedSections];
+
+    // Handle out-of-bounds index gracefully (can happen when removing multiple items)
+    if (!sectionData || index >= sectionData.length || index < 0) {
+      return;
+    }
+
+    const itemToRemove = sectionData[index];
 
     setCategorizedSections(prev => ({
       ...prev,
