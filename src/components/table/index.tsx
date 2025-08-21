@@ -180,6 +180,24 @@ const SampleDataTable: React.FC<{
           </thead>
           <tbody>
             {(() => {
+              // Function to separate date and time from combined values
+              const separateDateTime = (value: string) => {
+                if (!value) return { date: '', time: '' };
+
+                // Pattern to detect date formats: 6-25-25 or 6/25/25 
+                // Look for: digit(s)-digit(s)-2digits followed by anything else
+                const datePattern = /^(\d{1,2}[-\/]\d{1,2}[-\/]\d{2})(.*)$/;
+                const match = value.match(datePattern);
+
+                if (match) {
+                  const date = match[1];
+                  const time = match[2];
+                  return { date: date, time: time };
+                }
+
+                return { date: '', time: value };
+              };
+
               // Create an array to hold all sample rows (including duplicates for each analysis method)
               const allSampleRows: any[] = [];
               sampleNumbers.forEach(sampleNum => {
@@ -187,13 +205,59 @@ const SampleDataTable: React.FC<{
                 const sampleId = sample[`customer_sample_id_${sampleNum}`];
                 const matrix = sample[`customer_sample_id_${sampleNum}_matrix`];
                 const comp = sample[`customer_sample_id_${sampleNum}_comp`];
-                const startDate = sample[`customer_sample_id_${sampleNum}_start_date`];
-                const startTime = sample[`customer_sample_id_${sampleNum}_start_time`];
-                const endDate = sample[`customer_sample_id_${sampleNum}_end_date`];
-                const endTime = sample[`customer_sample_id_${sampleNum}_end_time`];
+                const rawStartDate = sample[`customer_sample_id_${sampleNum}_start_date`];
+                const rawStartTime = sample[`customer_sample_id_${sampleNum}_start_time`];
+                const rawEndDate = sample[`customer_sample_id_${sampleNum}_end_date`];
+                const rawEndTime = sample[`customer_sample_id_${sampleNum}_end_time`];
                 const containers = sample[`sample_id_${sampleNum}_no_of_container`];
                 const analysisRequest = sample[`analysis_request_${sampleNum}`];
+                console.log("rawStartDate", rawStartDate);
+                console.log("rawStartTime", rawStartTime);
+                console.log("rawEndDate", rawEndDate);
+                console.log("rawEndTime", rawEndTime);
 
+                // Process startDate and startTime
+                let startDate = rawStartDate;
+                let startTime = rawStartTime;
+                if (rawStartDate?.value) {
+                  const separated = separateDateTime(rawStartDate.value);
+                  if (separated.date) {
+                    startDate = { ...rawStartDate, value: separated.date };
+                    if (separated.time && !rawStartTime?.value) {
+                      // Create a new independent field for the separated time
+                      startTime = {
+                        ...rawStartDate,
+                        value: separated.time,
+                        type: `customer_sample_id_${sampleNum}_start_time`,
+                        originalIndex: -1 // Mark as virtual field
+                      };
+                    }
+                  }
+                }
+
+                // Process endDate and endTime
+                let endDate = rawEndDate;
+                let endTime = rawEndTime;
+                if (rawEndDate?.value) {
+                  const separated = separateDateTime(rawEndDate.value);
+                  if (separated.date) {
+                    endDate = { ...rawEndDate, value: separated.date };
+                    if (separated.time && !rawEndTime?.value) {
+                      // Create a new independent field for the separated time
+                      endTime = {
+                        ...rawEndDate,
+                        value: separated.time,
+                        type: `customer_sample_id_${sampleNum}_end_time`,
+                        originalIndex: -1 // Mark as virtual field
+                      };
+                    }
+                  }
+                }
+
+                console.log("startDate", startDate);
+                console.log("startTime", startTime);
+                console.log("endDate", endDate);
+                console.log("endTime", endTime);
                 // Only process if at least one field exists for this sample
                 const hasData = sampleId || matrix || comp || startDate || startTime || endDate || endTime || containers || analysisRequest;
                 if (!hasData) return;
@@ -344,7 +408,18 @@ const SampleDataTable: React.FC<{
                         type="text"
                         value={row.startTime.value || ''}
                         disabled={!editable}
-                        onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.startTime.originalIndex, e.target.value)}
+                        onChange={(e) => {
+                          if (row.startTime.originalIndex === -1) {
+                            // This is a virtual field created from separated date/time
+                            // Update the original startDate field with combined value
+                            const dateValue = row.startDate?.value || '';
+                            const newCombinedValue = dateValue + e.target.value;
+                            onFieldChange?.('collectedSampleDataInfo', row.startDate.originalIndex, newCombinedValue);
+                          } else {
+                            // This is a real field, update normally
+                            onFieldChange?.('collectedSampleDataInfo', row.startTime.originalIndex, e.target.value);
+                          }
+                        }}
                         style={inputStyle}
                       />
                     )}
@@ -366,7 +441,18 @@ const SampleDataTable: React.FC<{
                         type="text"
                         value={row.endTime.value || ''}
                         disabled={!editable}
-                        onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.endTime.originalIndex, e.target.value)}
+                        onChange={(e) => {
+                          if (row.endTime.originalIndex === -1) {
+                            // This is a virtual field created from separated date/time
+                            // Update the original endDate field with combined value
+                            const dateValue = row.endDate?.value || '';
+                            const newCombinedValue = dateValue + e.target.value;
+                            onFieldChange?.('collectedSampleDataInfo', row.endDate.originalIndex, newCombinedValue);
+                          } else {
+                            // This is a real field, update normally
+                            onFieldChange?.('collectedSampleDataInfo', row.endTime.originalIndex, e.target.value);
+                          }
+                        }}
                         style={inputStyle}
                       />
                     )}
