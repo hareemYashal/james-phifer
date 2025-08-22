@@ -120,6 +120,18 @@ const SampleDataTable: React.FC<{
                   value={field.value || ''}
                   disabled={!editable}
                   onChange={(e) => onFieldChange?.('collectedSampleDataInfo', field.originalIndex, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const inputs = Array.from(document.querySelectorAll('input[type="text"]:not([disabled])'));
+                      const currentIndex = inputs.indexOf(e.target as HTMLInputElement);
+                      const nextInput = inputs[currentIndex + 1];
+                      if (nextInput) {
+                        (nextInput as HTMLInputElement).focus();
+                        (nextInput as HTMLInputElement).select();
+                      }
+                    }
+                  }}
                   style={{
                     flex: 1,
                     minWidth: "100px",
@@ -159,397 +171,548 @@ const SampleDataTable: React.FC<{
 
       {/* Table Content */}
       <div style={{ overflowX: "auto" }}>
-        <table style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          fontSize: "12px"
-        }}>
-          <thead>
-            <tr style={{ backgroundColor: "#f9fafb" }}>
-              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "140px" }}>Customer Sample ID</th>
-              <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Matrix</th>
-              <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Comp/<br></br> Grab</th>
-              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "140px" }}>Composite Start(Date)</th>
-              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "140px" }}>Composite Start(Time)</th>
-              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "180px" }}>Collected or Composite End(Date)</th>
-              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "180px" }}>Collected or Composite End(Time)</th>
-              <th style={{ ...headerStyle, ...additionalheaderStyle, }}># Cont</th>
-              <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "100px" }}>Method</th>
-              {editable && <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {(() => {
-              // Function to separate date and time from combined values
-              const separateDateTime = (value: string) => {
-                if (!value) return { date: '', time: '' };
+        {(() => {
+          // Function to separate date and time from combined values
+          const separateDateTime = (value: string) => {
+            if (!value) return { date: '', time: '' };
 
-                // Pattern to detect date formats: 6-25-25 or 6/25/25 
-                // Look for: digit(s)-digit(s)-2digits followed by anything else
-                const datePattern = /^(\d{1,2}[-\/]\d{1,2}[-\/]\d{2})(.*)$/;
-                const match = value.match(datePattern);
+            // Pattern to detect date formats: 6-25-25 or 6/25/25 
+            // Look for: digit(s)-digit(s)-2digits followed by anything else
+            const datePattern = /^(\d{1,2}[-\/]\d{1,2}[-\/]\d{2})(.*)$/;
+            const match = value.match(datePattern);
 
-                if (match) {
-                  const date = match[1];
-                  const time = match[2];
-                  return { date: date, time: time };
+            if (match) {
+              const date = match[1];
+              const time = match[2];
+              return { date: date, time: time };
+            }
+
+            return { date: '', time: value };
+          };
+
+          // Create an array to hold all sample rows (including duplicates for each analysis method)
+          const allSampleRows: any[] = [];
+          sampleNumbers.forEach(sampleNum => {
+            const sample = groupedSamples[sampleNum];
+            const sampleId = sample[`customer_sample_id_${sampleNum}`];
+            const matrix = sample[`customer_sample_id_${sampleNum}_matrix`];
+            const comp = sample[`customer_sample_id_${sampleNum}_comp`];
+            const rawStartDate = sample[`customer_sample_id_${sampleNum}_start_date`];
+            const rawStartTime = sample[`customer_sample_id_${sampleNum}_start_time`];
+            const rawEndDate = sample[`customer_sample_id_${sampleNum}_end_date`];
+            const rawEndTime = sample[`customer_sample_id_${sampleNum}_end_time`];
+            const containers = sample[`sample_id_${sampleNum}_no_of_container`];
+            const analysisRequest = sample[`analysis_request_${sampleNum}`];
+            console.log("rawStartDate", rawStartDate);
+            console.log("rawStartTime", rawStartTime);
+            console.log("rawEndDate", rawEndDate);
+            console.log("rawEndTime", rawEndTime);
+
+            // Process startDate and startTime
+            let startDate = rawStartDate;
+            let startTime = rawStartTime;
+            if (rawStartDate?.value) {
+              const separated = separateDateTime(rawStartDate.value);
+              if (separated.date) {
+                startDate = { ...rawStartDate, value: separated.date };
+                if (separated.time && !rawStartTime?.value) {
+                  // Create a new independent field for the separated time
+                  startTime = {
+                    ...rawStartDate,
+                    value: separated.time,
+                    type: `customer_sample_id_${sampleNum}_start_time`,
+                    originalIndex: -1 // Mark as virtual field
+                  };
                 }
+              }
+            }
 
-                return { date: '', time: value };
-              };
-
-              // Create an array to hold all sample rows (including duplicates for each analysis method)
-              const allSampleRows: any[] = [];
-              sampleNumbers.forEach(sampleNum => {
-                const sample = groupedSamples[sampleNum];
-                const sampleId = sample[`customer_sample_id_${sampleNum}`];
-                const matrix = sample[`customer_sample_id_${sampleNum}_matrix`];
-                const comp = sample[`customer_sample_id_${sampleNum}_comp`];
-                const rawStartDate = sample[`customer_sample_id_${sampleNum}_start_date`];
-                const rawStartTime = sample[`customer_sample_id_${sampleNum}_start_time`];
-                const rawEndDate = sample[`customer_sample_id_${sampleNum}_end_date`];
-                const rawEndTime = sample[`customer_sample_id_${sampleNum}_end_time`];
-                const containers = sample[`sample_id_${sampleNum}_no_of_container`];
-                const analysisRequest = sample[`analysis_request_${sampleNum}`];
-                console.log("rawStartDate", rawStartDate);
-                console.log("rawStartTime", rawStartTime);
-                console.log("rawEndDate", rawEndDate);
-                console.log("rawEndTime", rawEndTime);
-
-                // Process startDate and startTime
-                let startDate = rawStartDate;
-                let startTime = rawStartTime;
-                if (rawStartDate?.value) {
-                  const separated = separateDateTime(rawStartDate.value);
-                  if (separated.date) {
-                    startDate = { ...rawStartDate, value: separated.date };
-                    if (separated.time && !rawStartTime?.value) {
-                      // Create a new independent field for the separated time
-                      startTime = {
-                        ...rawStartDate,
-                        value: separated.time,
-                        type: `customer_sample_id_${sampleNum}_start_time`,
-                        originalIndex: -1 // Mark as virtual field
-                      };
-                    }
-                  }
+            // Process endDate and endTime
+            let endDate = rawEndDate;
+            let endTime = rawEndTime;
+            if (rawEndDate?.value) {
+              const separated = separateDateTime(rawEndDate.value);
+              if (separated.date) {
+                endDate = { ...rawEndDate, value: separated.date };
+                if (separated.time && !rawEndTime?.value) {
+                  // Create a new independent field for the separated time
+                  endTime = {
+                    ...rawEndDate,
+                    value: separated.time,
+                    type: `customer_sample_id_${sampleNum}_end_time`,
+                    originalIndex: -1 // Mark as virtual field
+                  };
                 }
+              }
+            }
 
-                // Process endDate and endTime
-                let endDate = rawEndDate;
-                let endTime = rawEndTime;
-                if (rawEndDate?.value) {
-                  const separated = separateDateTime(rawEndDate.value);
-                  if (separated.date) {
-                    endDate = { ...rawEndDate, value: separated.date };
-                    if (separated.time && !rawEndTime?.value) {
-                      // Create a new independent field for the separated time
-                      endTime = {
-                        ...rawEndDate,
-                        value: separated.time,
-                        type: `customer_sample_id_${sampleNum}_end_time`,
-                        originalIndex: -1 // Mark as virtual field
-                      };
-                    }
-                  }
-                }
+            console.log("startDate", startDate);
+            console.log("startTime", startTime);
+            console.log("endDate", endDate);
+            console.log("endTime", endTime);
+            // Only process if at least one field exists for this sample
+            const hasData = sampleId || matrix || comp || startDate || startTime || endDate || endTime || containers || analysisRequest;
+            if (!hasData) return;
+            // console.log("one group 4️⃣", sampleId, matrix, comp, startDate, startTime, endDate, endTime, containers, analysisRequest);
 
-                console.log("startDate", startDate);
-                console.log("startTime", startTime);
-                console.log("endDate", endDate);
-                console.log("endTime", endTime);
-                // Only process if at least one field exists for this sample
-                const hasData = sampleId || matrix || comp || startDate || startTime || endDate || endTime || containers || analysisRequest;
-                if (!hasData) return;
-                // console.log("one group 4️⃣", sampleId, matrix, comp, startDate, startTime, endDate, endTime, containers, analysisRequest);
+            // Find all active analysis methods for this sample
+            const activeAnalysisMethods: any[] = [];
 
-                // Find all active analysis methods for this sample
-                const activeAnalysisMethods: any[] = [];
+            // Check each analysis method (01-10)
+            for (let i = 1; i <= 10; i++) {
+              const analysisNum = i.toString().padStart(2, '0');
+              const fieldType = `Sample${sampleNum.padStart(2, '0')}_analysis${analysisNum}`;
+              let analysisField = sample[fieldType];
+              // console.log("analysisNum 7️⃣", analysisNum);
+              // console.log("fieldType 8️⃣", fieldType);
+              // console.log("analysisField 9️⃣", analysisField);
 
-                // Check each analysis method (01-10)
-                for (let i = 1; i <= 10; i++) {
-                  const analysisNum = i.toString().padStart(2, '0');
-                  const fieldType = `Sample${sampleNum.padStart(2, '0')}_analysis${analysisNum}`;
-                  let analysisField = sample[fieldType];
-                  // console.log("analysisNum 7️⃣", analysisNum);
-                  // console.log("fieldType 8️⃣", fieldType);
-                  // console.log("analysisField 9️⃣", analysisField);
+              if (!analysisField && groupedSamples[sampleNum.padStart(2, '0')]) {
+                analysisField = groupedSamples[sampleNum.padStart(2, '0')][fieldType];
+              }
 
-                  if (!analysisField && groupedSamples[sampleNum.padStart(2, '0')]) {
-                    analysisField = groupedSamples[sampleNum.padStart(2, '0')][fieldType];
-                  }
-
-                  if (analysisField) {
-                    // Use the Sample0X_analysis0X value directly as the method value
-                    const methodValue = analysisField.value || '';
-                    activeAnalysisMethods.push({
-                      methodValue,
-                      analysisField,
-                      analysisNum
-                    });
-                  }
-                }
-                // console.log("activeAnalysisMethods *10", activeAnalysisMethods);
-                // If no active analysis methods, check for fallback analysis_request
-                if (activeAnalysisMethods.length === 0) {
-                  // Use analysis_request as fallback
-                  if (analysisRequest) {
-                    allSampleRows.push({
-                      sampleNum,
-                      sampleId,
-                      matrix,
-                      comp,
-                      startDate,
-                      startTime,
-                      endDate,
-                      endTime,
-                      containers,
-                      methodValue: analysisRequest.value || '', // Use analysis_request value as fallback
-                      analysisField: analysisRequest, // Use analysis_request field for confidence and editing
-                      rowKey: `${sampleNum}-analysis-request-fallback`
-                    });
-                  } else {
-                    // No method data at all
-                    allSampleRows.push({
-                      sampleNum,
-                      sampleId,
-                      matrix,
-                      comp,
-                      startDate,
-                      startTime,
-                      endDate,
-                      endTime,
-                      containers,
-                      methodValue: null, // No method value
-                      analysisField: null, // No analysis field
-                      rowKey: `${sampleNum}-default`
-                    });
-                  }
-                } else {
-                  // Create a row for each active analysis method
-                  activeAnalysisMethods.forEach((method, methodIndex) => {
-                    allSampleRows.push({
-                      sampleNum,
-                      sampleId,
-                      matrix,
-                      comp,
-                      startDate,
-                      startTime,
-                      endDate,
-                      endTime,
-                      containers,
-                      methodValue: method.methodValue,
-                      analysisField: method.analysisField,
-                      rowKey: `${sampleNum}-${method.analysisNum}-${methodIndex}`
-                    });
-                  });
-                }
+              if (analysisField) {
+                // Use the Sample0X_analysis0X value directly as the method value
+                const methodValue = analysisField.value || '';
+                activeAnalysisMethods.push({
+                  methodValue,
+                  analysisField,
+                  analysisNum
+                });
+              }
+            }
+            // console.log("activeAnalysisMethods *10", activeAnalysisMethods);
+            // If no active analysis methods, check for fallback analysis_request
+            if (activeAnalysisMethods.length === 0) {
+              // Use analysis_request as fallback
+              if (analysisRequest) {
+                allSampleRows.push({
+                  sampleNum,
+                  sampleId,
+                  matrix,
+                  comp,
+                  startDate,
+                  startTime,
+                  endDate,
+                  endTime,
+                  containers,
+                  methodValue: analysisRequest.value || '', // Use analysis_request value as fallback
+                  analysisField: analysisRequest, // Use analysis_request field for confidence and editing
+                  rowKey: `${sampleNum}-analysis-request-fallback`
+                });
+              } else {
+                // No method data at all
+                allSampleRows.push({
+                  sampleNum,
+                  sampleId,
+                  matrix,
+                  comp,
+                  startDate,
+                  startTime,
+                  endDate,
+                  endTime,
+                  containers,
+                  methodValue: null, // No method value
+                  analysisField: null, // No analysis field
+                  rowKey: `${sampleNum}-default`
+                });
+              }
+            } else {
+              // Create a row for each active analysis method
+              activeAnalysisMethods.forEach((method, methodIndex) => {
+                allSampleRows.push({
+                  sampleNum,
+                  sampleId,
+                  matrix,
+                  comp,
+                  startDate,
+                  startTime,
+                  endDate,
+                  endTime,
+                  containers,
+                  methodValue: method.methodValue,
+                  analysisField: method.analysisField,
+                  rowKey: `${sampleNum}-${method.analysisNum}-${methodIndex}`
+                });
               });
+            }
+          });
 
-              if (allSampleRows.length === 0) {
-                return (
+          if (allSampleRows.length === 0) {
+            return (
+              <table style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontSize: "12px"
+              }}>
+                <tbody>
                   <tr>
-                    <td colSpan={editable ? 10 : 9} style={{ ...cellStyle, textAlign: "center", fontStyle: "italic", color: "#6b7280" }}>
+                    <td colSpan={10} style={{ ...cellStyle, textAlign: "center", fontStyle: "italic", color: "#6b7280" }}>
                       No sample data available
                     </td>
                   </tr>
-                );
-              }
+                </tbody>
+              </table>
+            );
+          }
 
-              return allSampleRows.map((row) => (
-                <tr key={row.rowKey}>
-                  <td style={cellStyle}>
-                    {row.sampleId && (
-                      <input
-                        type="text"
-                        value={row.sampleId.value || ''}
-                        disabled={!editable}
-                        onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.sampleId.originalIndex, e.target.value)}
-                        style={inputStyle}
-                      />
-                    )}
-                  </td>
-                  <td style={cellStyle}>
-                    {row.matrix && (
-                      <input
-                        type="text"
-                        value={row.matrix.value || ''}
-                        disabled={!editable}
-                        onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.matrix.originalIndex, e.target.value)}
-                        style={inputStyle}
-                      />
-                    )}
-                  </td>
-                  <td style={cellStyle}>
-                    {row.comp && (
-                      <input
-                        type="text"
-                        value={row.comp.value || ''}
-                        disabled={!editable}
-                        onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.comp.originalIndex, e.target.value)}
-                        style={inputStyle}
-                      />
-                    )}
-                  </td>
-                  <td style={cellStyle}>
-                    {row.startDate && (
-                      <input
-                        type="text"
-                        value={row.startDate.value || ''}
-                        disabled={!editable}
-                        onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.startDate.originalIndex, e.target.value)}
-                        style={inputStyle}
-                      />
-                    )}
-                  </td>
-                  <td style={cellStyle}>
-                    {row.startTime && (
-                      <input
-                        type="text"
-                        value={row.startTime.value || ''}
-                        disabled={!editable}
-                        onChange={(e) => {
-                          if (row.startTime.originalIndex === -1) {
-                            // This is a virtual field created from separated date/time
-                            // Update the original startDate field with combined value
-                            const dateValue = row.startDate?.value || '';
-                            const newCombinedValue = dateValue + e.target.value;
-                            onFieldChange?.('collectedSampleDataInfo', row.startDate.originalIndex, newCombinedValue);
-                          } else {
-                            // This is a real field, update normally
-                            onFieldChange?.('collectedSampleDataInfo', row.startTime.originalIndex, e.target.value);
+          // Check which columns have data
+          const hasData = {
+            sampleId: allSampleRows.some(row => row.sampleId?.value),
+            matrix: allSampleRows.some(row => row.matrix?.value),
+            comp: allSampleRows.some(row => row.comp?.value),
+            startDate: allSampleRows.some(row => row.startDate?.value),
+            startTime: allSampleRows.some(row => row.startTime?.value),
+            endDate: allSampleRows.some(row => row.endDate?.value),
+            endTime: allSampleRows.some(row => row.endTime?.value),
+            containers: allSampleRows.some(row => row.containers?.value),
+            method: allSampleRows.some(row => row.methodValue)
+          };
+
+          const tableRows = allSampleRows.map((row) => (
+            <tr key={row.rowKey}>
+              {hasData.sampleId && (
+                <td style={cellStyle}>
+                  {row.sampleId && (
+                    <input
+                      type="text"
+                      value={row.sampleId.value || ''}
+                      disabled={!editable}
+                      onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.sampleId.originalIndex, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const inputs = Array.from(document.querySelectorAll('input[type="text"]:not([disabled])'));
+                          const currentIndex = inputs.indexOf(e.target as HTMLInputElement);
+                          const nextInput = inputs[currentIndex + 1];
+                          if (nextInput) {
+                            (nextInput as HTMLInputElement).focus();
+                            (nextInput as HTMLInputElement).select();
                           }
-                        }}
-                        style={inputStyle}
-                      />
-                    )}
-                  </td>
-                  <td style={cellStyle}>
-                    {row.endDate && (
-                      <input
-                        type="text"
-                        value={row.endDate.value || ''}
-                        disabled={!editable}
-                        onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.endDate.originalIndex, e.target.value)}
-                        style={inputStyle}
-                      />
-                    )}
-                  </td>
-                  <td style={cellStyle}>
-                    {row.endTime && (
-                      <input
-                        type="text"
-                        value={row.endTime.value || ''}
-                        disabled={!editable}
-                        onChange={(e) => {
-                          if (row.endTime.originalIndex === -1) {
-                            // This is a virtual field created from separated date/time
-                            // Update the original endDate field with combined value
-                            const dateValue = row.endDate?.value || '';
-                            const newCombinedValue = dateValue + e.target.value;
-                            onFieldChange?.('collectedSampleDataInfo', row.endDate.originalIndex, newCombinedValue);
-                          } else {
-                            // This is a real field, update normally
-                            onFieldChange?.('collectedSampleDataInfo', row.endTime.originalIndex, e.target.value);
-                          }
-                        }}
-                        style={inputStyle}
-                      />
-                    )}
-                  </td>
-                  <td style={cellStyle}>
-                    {row.containers && (
-                      <input
-                        type="text"
-                        value={row.containers.value || ''}
-                        disabled={!editable}
-                        onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.containers.originalIndex, e.target.value)}
-                        style={inputStyle}
-                      />
-                    )}
-                  </td>
-                  <td style={cellStyle}>
-                    {row.methodValue !== null ? (
-                      <input
-                        type="text"
-                        value={row.methodValue || ''}
-                        disabled={!editable}
-                        onChange={(e) => {
-                          if (row.analysisField) {
-                            onFieldChange?.('collectedSampleDataInfo', row.analysisField.originalIndex, e.target.value);
-                          }
-                        }}
-                        style={inputStyle}
-                        placeholder="Enter method code"
-                      />
-                    ) : null}
-                  </td>
-                  {editable && (
-                    <td style={cellStyle}>
-                      <button
-                        onClick={() => {
-                          // Remove all fields for this entire sample row
-                          const sampleNum = row.sampleNum;
-                          const fieldsToRemove: number[] = [];
-
-                          // Collect all field indices for this sample number
-                          items.forEach((item, index) => {
-                            const type = item.type;
-                            let itemSampleNumber = '';
-
-                            // Extract sample number using the same logic as in the grouping
-                            if (type.includes('customer_sample_id_')) {
-                              const match = type.match(/customer_sample_id_(\d+)(?:_.*)?/);
-                              if (match) {
-                                itemSampleNumber = match[1];
-                              }
-                            } else if (type.includes('sample_id_')) {
-                              const match = type.match(/sample_id_(\d+)_/);
-                              if (match) {
-                                itemSampleNumber = match[1];
-                              }
-                            } else if (type.includes('analysis_request_')) {
-                              const match = type.match(/analysis_request_(\d+)/);
-                              if (match) {
-                                itemSampleNumber = match[1];
-                              }
-                            } else if (type.match(/^Sample\d{2}_analysis\d{1,2}$/)) {
-                              const match = type.match(/^Sample(\d{2})_analysis\d{1,2}$/);
-                              if (match) {
-                                itemSampleNumber = match[1];
-                              }
-                            }
-
-                            // If this field belongs to the same sample, add it to removal list
-                            if (itemSampleNumber === sampleNum) {
-                              fieldsToRemove.push(index);
-                            }
-                          });
-
-                          // Remove all fields for this sample in reverse order to maintain indices
-                          fieldsToRemove.reverse().forEach(index => {
-                            onRemoveField?.('collectedSampleDataInfo', index);
-                          });
-                        }}
-                        style={{
-                          backgroundColor: "#ef4444",
-                          color: "white",
-                          padding: "2px 6px",
-                          borderRadius: "3px",
-                          border: "none",
-                          fontSize: "11px",
-                          cursor: "pointer"
-                        }}
-                      >
-                        ×
-                      </button>
-                    </td>
+                        }
+                      }}
+                      style={inputStyle}
+                    />
                   )}
+                </td>
+              )}
+              {hasData.matrix && (
+                <td style={cellStyle}>
+                  {row.matrix && (
+                    <input
+                      type="text"
+                      value={row.matrix.value || ''}
+                      disabled={!editable}
+                      onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.matrix.originalIndex, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const inputs = Array.from(document.querySelectorAll('input[type="text"]:not([disabled])'));
+                          const currentIndex = inputs.indexOf(e.target as HTMLInputElement);
+                          const nextInput = inputs[currentIndex + 1];
+                          if (nextInput) {
+                            (nextInput as HTMLInputElement).focus();
+                            (nextInput as HTMLInputElement).select();
+                          }
+                        }
+                      }}
+                      style={inputStyle}
+                    />
+                  )}
+                </td>
+              )}
+              {hasData.comp && (
+                <td style={cellStyle}>
+                  {row.comp && (
+                    <input
+                      type="text"
+                      value={row.comp.value || ''}
+                      disabled={!editable}
+                      onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.comp.originalIndex, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const inputs = Array.from(document.querySelectorAll('input[type="text"]:not([disabled])'));
+                          const currentIndex = inputs.indexOf(e.target as HTMLInputElement);
+                          const nextInput = inputs[currentIndex + 1];
+                          if (nextInput) {
+                            (nextInput as HTMLInputElement).focus();
+                            (nextInput as HTMLInputElement).select();
+                          }
+                        }
+                      }}
+                      style={inputStyle}
+                    />
+                  )}
+                </td>
+              )}
+              {hasData.startDate && (
+                <td style={cellStyle}>
+                  {row.startDate && (
+                    <input
+                      type="text"
+                      value={row.startDate.value || ''}
+                      disabled={!editable}
+                      onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.startDate.originalIndex, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const inputs = Array.from(document.querySelectorAll('input[type="text"]:not([disabled])'));
+                          const currentIndex = inputs.indexOf(e.target as HTMLInputElement);
+                          const nextInput = inputs[currentIndex + 1];
+                          if (nextInput) {
+                            (nextInput as HTMLInputElement).focus();
+                            (nextInput as HTMLInputElement).select();
+                          }
+                        }
+                      }}
+                      style={inputStyle}
+                    />
+                  )}
+                </td>
+              )}
+              {hasData.startTime && (
+                <td style={cellStyle}>
+                  {row.startTime && (
+                    <input
+                      type="text"
+                      value={row.startTime.value || ''}
+                      disabled={!editable}
+                      onChange={(e) => {
+                        if (row.startTime.originalIndex === -1) {
+                          // This is a virtual field created from separated date/time
+                          // Update the original startDate field with combined value
+                          const dateValue = row.startDate?.value || '';
+                          const newCombinedValue = dateValue + e.target.value;
+                          onFieldChange?.('collectedSampleDataInfo', row.startDate.originalIndex, newCombinedValue);
+                        } else {
+                          // This is a real field, update normally
+                          onFieldChange?.('collectedSampleDataInfo', row.startTime.originalIndex, e.target.value);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const inputs = Array.from(document.querySelectorAll('input[type="text"]:not([disabled])'));
+                          const currentIndex = inputs.indexOf(e.target as HTMLInputElement);
+                          const nextInput = inputs[currentIndex + 1];
+                          if (nextInput) {
+                            (nextInput as HTMLInputElement).focus();
+                            (nextInput as HTMLInputElement).select();
+                          }
+                        }
+                      }}
+                      style={inputStyle}
+                    />
+                  )}
+                </td>
+              )}
+              {hasData.endDate && (
+                <td style={cellStyle}>
+                  {row.endDate && (
+                    <input
+                      type="text"
+                      value={row.endDate.value || ''}
+                      disabled={!editable}
+                      onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.endDate.originalIndex, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const inputs = Array.from(document.querySelectorAll('input[type="text"]:not([disabled])'));
+                          const currentIndex = inputs.indexOf(e.target as HTMLInputElement);
+                          const nextInput = inputs[currentIndex + 1];
+                          if (nextInput) {
+                            (nextInput as HTMLInputElement).focus();
+                            (nextInput as HTMLInputElement).select();
+                          }
+                        }
+                      }}
+                      style={inputStyle}
+                    />
+                  )}
+                </td>
+              )}
+              {hasData.endTime && (
+                <td style={cellStyle}>
+                  {row.endTime && (
+                    <input
+                      type="text"
+                      value={row.endTime.value || ''}
+                      disabled={!editable}
+                      onChange={(e) => {
+                        if (row.endTime.originalIndex === -1) {
+                          // This is a virtual field created from separated date/time
+                          // Update the original endDate field with combined value
+                          const dateValue = row.endDate?.value || '';
+                          const newCombinedValue = dateValue + e.target.value;
+                          onFieldChange?.('collectedSampleDataInfo', row.endDate.originalIndex, newCombinedValue);
+                        } else {
+                          // This is a real field, update normally
+                          onFieldChange?.('collectedSampleDataInfo', row.endTime.originalIndex, e.target.value);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const inputs = Array.from(document.querySelectorAll('input[type="text"]:not([disabled])'));
+                          const currentIndex = inputs.indexOf(e.target as HTMLInputElement);
+                          const nextInput = inputs[currentIndex + 1];
+                          if (nextInput) {
+                            (nextInput as HTMLInputElement).focus();
+                            (nextInput as HTMLInputElement).select();
+                          }
+                        }
+                      }}
+                      style={inputStyle}
+                    />
+                  )}
+                </td>
+              )}
+              {hasData.containers && (
+                <td style={cellStyle}>
+                  {row.containers && (
+                    <input
+                      type="text"
+                      value={row.containers.value || ''}
+                      disabled={!editable}
+                      onChange={(e) => onFieldChange?.('collectedSampleDataInfo', row.containers.originalIndex, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const inputs = Array.from(document.querySelectorAll('input[type="text"]:not([disabled])'));
+                          const currentIndex = inputs.indexOf(e.target as HTMLInputElement);
+                          const nextInput = inputs[currentIndex + 1];
+                          if (nextInput) {
+                            (nextInput as HTMLInputElement).focus();
+                            (nextInput as HTMLInputElement).select();
+                          }
+                        }
+                      }}
+                      style={inputStyle}
+                    />
+                  )}
+                </td>
+              )}
+              {hasData.method && (
+                <td style={cellStyle}>
+                  {row.methodValue !== null ? (
+                    <input
+                      type="text"
+                      value={row.methodValue || ''}
+                      disabled={!editable}
+                      onChange={(e) => {
+                        if (row.analysisField) {
+                          onFieldChange?.('collectedSampleDataInfo', row.analysisField.originalIndex, e.target.value);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const inputs = Array.from(document.querySelectorAll('input[type="text"]:not([disabled])'));
+                          const currentIndex = inputs.indexOf(e.target as HTMLInputElement);
+                          const nextInput = inputs[currentIndex + 1];
+                          if (nextInput) {
+                            (nextInput as HTMLInputElement).focus();
+                            (nextInput as HTMLInputElement).select();
+                          }
+                        }
+                      }}
+                      style={inputStyle}
+                      placeholder="Enter method code"
+                    />
+                  ) : null}
+                </td>
+              )}
+              {editable && (
+                <td style={cellStyle}>
+                  <button
+                    onClick={() => {
+                      // Remove all fields for this entire sample row
+                      const sampleNum = row.sampleNum;
+                      const fieldsToRemove: number[] = [];
+
+                      // Collect all field indices for this sample number
+                      items.forEach((item, index) => {
+                        const type = item.type;
+                        let itemSampleNumber = '';
+
+                        // Extract sample number using the same logic as in the grouping
+                        if (type.includes('customer_sample_id_')) {
+                          const match = type.match(/customer_sample_id_(\d+)(?:_.*)?/);
+                          if (match) {
+                            itemSampleNumber = match[1];
+                          }
+                        } else if (type.includes('sample_id_')) {
+                          const match = type.match(/sample_id_(\d+)_/);
+                          if (match) {
+                            itemSampleNumber = match[1];
+                          }
+                        } else if (type.includes('analysis_request_')) {
+                          const match = type.match(/analysis_request_(\d+)/);
+                          if (match) {
+                            itemSampleNumber = match[1];
+                          }
+                        } else if (type.match(/^Sample\d{2}_analysis\d{1,2}$/)) {
+                          const match = type.match(/^Sample(\d{2})_analysis\d{1,2}$/);
+                          if (match) {
+                            itemSampleNumber = match[1];
+                          }
+                        }
+
+                        // If this field belongs to the same sample, add it to removal list
+                        if (itemSampleNumber === sampleNum) {
+                          fieldsToRemove.push(index);
+                        }
+                      });
+
+                      // Remove all fields for this sample in reverse order to maintain indices
+                      fieldsToRemove.reverse().forEach(index => {
+                        onRemoveField?.('collectedSampleDataInfo', index);
+                      });
+                    }}
+                    style={{
+                      backgroundColor: "#ef4444",
+                      color: "white",
+                      padding: "2px 6px",
+                      borderRadius: "3px",
+                      border: "none",
+                      fontSize: "11px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    ×
+                  </button>
+                </td>
+              )}
+            </tr>
+          ));
+
+          return (
+            <table style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: "12px"
+            }}>
+              <thead>
+                <tr style={{ backgroundColor: "#f9fafb" }}>
+                  {hasData.sampleId && <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "140px" }}>Customer Sample ID</th>}
+                  {hasData.matrix && <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Matrix</th>}
+                  {hasData.comp && <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Comp/<br></br> Grab</th>}
+                  {hasData.startDate && <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "140px" }}>Composite Start(Date)</th>}
+                  {hasData.startTime && <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "140px" }}>Composite Start(Time)</th>}
+                  {hasData.endDate && <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "180px" }}>Collected or Composite End(Date)</th>}
+                  {hasData.endTime && <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "180px" }}>Collected or Composite End(Time)</th>}
+                  {hasData.containers && <th style={{ ...headerStyle, ...additionalheaderStyle, }}># Cont</th>}
+                  {hasData.method && <th style={{ ...headerStyle, ...additionalheaderStyle, minWidth: "100px" }}>Method</th>}
+                  {editable && <th style={{ ...headerStyle, ...additionalheaderStyle, }}>Actions</th>}
                 </tr>
-              ));
-            })()}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {tableRows}
+              </tbody>
+            </table>
+          );
+        })()}
       </div>
     </div>
   );
@@ -683,6 +846,19 @@ const SpreadsheetTable: React.FC<{
                     value={item.value || ''}
                     disabled={!editable}
                     onChange={(e) => onFieldChange?.(sectionType, index, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        // Find next input field and focus it
+                        const inputs = Array.from(document.querySelectorAll('input[type="text"]:not([disabled])'));
+                        const currentIndex = inputs.indexOf(e.target as HTMLInputElement);
+                        const nextInput = inputs[currentIndex + 1];
+                        if (nextInput) {
+                          (nextInput as HTMLInputElement).focus();
+                          (nextInput as HTMLInputElement).select();
+                        }
+                      }
+                    }}
                     style={inputStyle}
                   />
                 </td>
