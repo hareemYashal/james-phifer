@@ -11,8 +11,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import styles from "./CompanyContactGrid.module.css";
 
 // Extracted components and utilities
-import { CompanyContactGridHeader } from "./company-contact-grid/CompanyContactGridHeader";
-import { getCompanyContactColumnDefs, defaultColDef } from "./company-contact-grid/grid-config";
+import { CompanyContactGridHeader } from "./CompanyContactGridHeader";
+import { getCompanyContactColumnDefs, defaultColDef } from "./grid-config";
 import { useCompanyContactGrid } from "@/hooks/useCompanyContactGrid";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -46,9 +46,16 @@ export function CompanyContactGrid({
     handleExport,
     handleAddRow,
     handleDeleteSelected,
-  } = useCompanyContactGrid({ categorizedSections, onFieldChange, onRemoveField });
+  } = useCompanyContactGrid({
+    categorizedSections,
+    onFieldChange,
+    onRemoveField,
+  });
 
-  const columnDefs = useMemo(() => getCompanyContactColumnDefs(onFieldChange), [onFieldChange]);
+  const columnDefs = useMemo(
+    () => getCompanyContactColumnDefs(onFieldChange),
+    [onFieldChange]
+  );
 
   return (
     <Card>

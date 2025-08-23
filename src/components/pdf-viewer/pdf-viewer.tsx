@@ -36,8 +36,8 @@ import { ShowToast } from "@/shared/showToast";
 import EditableTable, { SpreadsheetView } from "../table";
 
 import ConfirmationModal from "@/shared/DataConfirmationModal";
-import { CompanyContactGrid } from "../company-contact-grid";
-import { SampleDataGrid } from "../sample-data-grid";
+import { CompanyContactGrid } from "../grid-tables/company-contact-grid/company-contact-grid";
+import { SampleDataGrid } from "../grid-tables/sample-data-grid/sample-data-grid";
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 

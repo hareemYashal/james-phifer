@@ -10,9 +10,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import styles from "./SampleDataGrid.module.css";
 
 // Extracted components and utilities
-import { SampleDataGridHeader } from "./sample-data-grid/SampleDataGridHeader";
-import { NonSampleFields } from "./sample-data-grid/NonSampleFields";
-import { getColumnDefs, defaultColDef } from "./sample-data-grid/grid-config";
+import { SampleDataGridHeader } from "./SampleDataGridHeader";
+import { NonSampleFields } from "./NonSampleFields";
+import { getColumnDefs, defaultColDef } from "./grid-config";
 import { useSampleDataGrid } from "@/hooks/useSampleDataGrid";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
