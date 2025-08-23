@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
-import { themeQuartz } from "ag-grid-community";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-quartz.css";
 import type {
   ColDef,
   GridReadyEvent,
@@ -16,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, Download } from "lucide-react";
 import { formatEntityTypeToDisplayName } from "@/lib/utils";
+import styles from "./CompanyContactGrid.module.css";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -333,9 +335,8 @@ export function CompanyContactGrid({
 
           {/* AG Grid */}
           <div className="w-full overflow-hidden border rounded-lg">
-            <div style={{ height: "400px", width: "100%" }}>
+            <div className={`ag-theme-quartz ${styles.grid} ${styles.gridWithBorders} ${styles.gridHeight}`}>
               <AgGridReact
-                theme={themeQuartz}
                 rowData={companyContactData}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
