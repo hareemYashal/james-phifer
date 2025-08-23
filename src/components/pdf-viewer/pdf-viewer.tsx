@@ -316,10 +316,10 @@ export default function FormParserInterface() {
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
 
   // Resizer states
-  const [leftPanelWidth, setLeftPanelWidth] = useState(30); // Percentage
+  const [leftPanelWidth, setLeftPanelWidth] = useState(50); // Percentage
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStartX, setResizeStartX] = useState(0);
-  const [resizeStartWidth, setResizeStartWidth] = useState(30);
+  const [resizeStartWidth, setResizeStartWidth] = useState(50);
 
   const [dragStart, setDragStart] = useState<{
     x: number;
