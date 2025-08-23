@@ -5,7 +5,9 @@ import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Plus } from "lucide-react";
 import styles from "./CompanyContactGrid.module.css";
 
 // Extracted components and utilities
@@ -59,7 +61,6 @@ export function CompanyContactGrid({
     <Card>
       <CompanyContactGridHeader
         selectedRows={selectedRows}
-        onAddRow={handleAddRow}
         onExport={handleExport}
         onDeleteSelected={handleDeleteSelected}
       />
@@ -107,6 +108,13 @@ export function CompanyContactGrid({
                 enterNavigatesVerticallyAfterEdit={true}
                 context={{ onRemoveField }}
               />
+            </div>
+            {/* Add Row Button at Bottom */}
+            <div className="flex justify-center pt-4 border-t">
+              <Button onClick={handleAddRow} size="sm" variant="default">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Row
+              </Button>
             </div>
           </div>
         </div>

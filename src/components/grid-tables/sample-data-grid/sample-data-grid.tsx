@@ -4,7 +4,9 @@ import { useMemo } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Plus } from "lucide-react";
 import styles from "./SampleDataGrid.module.css";
 
 // Extracted components and utilities
@@ -51,7 +53,6 @@ export function SampleDataGrid({
     <Card className="w-full shadow-lg border-0 bg-white">
       <SampleDataGridHeader
         selectedRows={selectedRows}
-        onAddRow={handleAddRow}
         onExport={handleExport}
         onDeleteSelected={handleDeleteSelected}
       />
@@ -102,6 +103,13 @@ export function SampleDataGrid({
                 enterNavigatesVertically={true}
                 enterNavigatesVerticallyAfterEdit={true}
               />
+            </div>
+            {/* Add Row Button at Bottom */}
+            <div className="flex justify-center pt-4 border-t">
+              <Button onClick={handleAddRow} size="sm" variant="default">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Row
+              </Button>
             </div>
           </div>
         </div>

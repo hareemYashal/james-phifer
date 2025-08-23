@@ -6,14 +6,12 @@ import type { SampleDataRowData } from "@/lib/sample-data-utils";
 
 interface SampleDataGridHeaderProps {
   selectedRows: SampleDataRowData[];
-  onAddRow: () => void;
   onExport: () => void;
   onDeleteSelected: () => void;
 }
 
 export const SampleDataGridHeader: React.FC<SampleDataGridHeaderProps> = ({
   selectedRows,
-  onAddRow,
   onExport,
   onDeleteSelected,
 }) => {
@@ -27,10 +25,6 @@ export const SampleDataGridHeader: React.FC<SampleDataGridHeaderProps> = ({
           </span>
         </div>
         <div className="flex gap-2">
-          <Button onClick={onAddRow} size="sm" variant="default">
-            <Plus className="h-4 w-4" />
-            Add Row
-          </Button>
           <Button onClick={onExport} size="sm" variant="outline">
             <Download className="h-4 w-4" />
             Export
