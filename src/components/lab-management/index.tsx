@@ -40,7 +40,9 @@ const LabManagement: React.FC = () => {
         });
         if (!response.ok) {
           const errorData = await response.json();
-          ShowToast(errorData.error || "Error fetching labs. Please try again.");
+          ShowToast(
+            errorData.error || "Error fetching labs. Please try again."
+          );
           console.error("Error fetching labs:", errorData.error);
         } else {
           const data = await response.json();
@@ -128,7 +130,9 @@ const LabManagement: React.FC = () => {
           padding: "10px",
         }}
       >
-        <h2 style={{ margin: 0 }}>Lab Management</h2>
+        <h2 className="" style={{ margin: 0 }}>
+          Lab Management
+        </h2>
         <button
           style={{
             padding: "5px 20px",
