@@ -27,6 +27,17 @@ export const getColumnDefs = (): ColDef[] => [
     headerTooltip: "Sample matrix type",
   },
   {
+    field: "grab",
+    headerName: "Grab",
+    cellDataType: "text",
+    minWidth: 80,
+    initialWidth: 100,
+    filter: "agTextColumnFilter",
+    sortable: true,
+    editable: true,
+    headerTooltip: "Grab type extracted from matrix value",
+  },
+  {
     field: "compositeStartDate",
     headerName: "Composite Start (Date)",
     cellDataType: "text",

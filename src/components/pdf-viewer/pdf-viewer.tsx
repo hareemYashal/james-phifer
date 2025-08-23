@@ -730,18 +730,30 @@ export default function FormParserInterface() {
     try {
       const token = localStorage.getItem("access_token");
 
+      const formData = new FormData();
+
+      formData.append("fields", JSON.stringify(extractedFields));
+
+      if (file) {
+        formData.append("file", file);
+      }
+
       const res = await fetch("/api/documents", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ fields: extractedFields }),
+        body: formData,
       });
+
       const result = await res.json();
       if (result.success) {
-        ShowToast("Data saved successfully!", "success");
+        ShowToast("Document and data saved successfully!", "success");
         setShowConfirmationModal(false);
+
+        if (result.fileUrl) {
+          console.log("Document stored at:", result.fileUrl);
+        }
       } else {
         ShowToast("Error: " + result.error, "error");
       }
