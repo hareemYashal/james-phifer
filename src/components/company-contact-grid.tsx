@@ -156,15 +156,7 @@ export function CompanyContactGrid({
           }
         },
       },
-      {
-        field: "confidence",
-        headerName: "Confidence",
-        width: 120,
-        filter: "agNumberColumnFilter",
-        sortable: true,
-        cellRenderer: ConfidenceCellRenderer,
-        type: "numericColumn",
-      },
+
       {
         field: "section",
         headerName: "Section",

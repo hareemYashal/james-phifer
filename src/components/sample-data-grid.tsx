@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
-import { themeQuartz } from "ag-grid-community";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-quartz.css";
 import type {
   ColDef,
   GridReadyEvent,
@@ -16,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, Download } from "lucide-react";
 import { formatEntityTypeToDisplayName } from "@/lib/utils";
+import styles from "./SampleDataGrid.module.css";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -257,57 +259,76 @@ export function SampleDataGrid({
   const [selectedRows, setSelectedRows] = useState<SampleDataRowData[]>([]);
   const [quickFilterText, setQuickFilterText] = useState("");
 
-  // Column definitions
+  // Column definitions with improved configuration
   const columnDefs: ColDef[] = useMemo(
     () => [
       {
         field: "customerSampleId",
         headerName: "Customer Sample ID",
-        width: 180,
+        cellDataType: "text",
+        minWidth: 160,
+        initialWidth: 180,
         pinned: "left",
         filter: "agTextColumnFilter",
         sortable: true,
         editable: true,
+        headerTooltip: "Unique identifier for the customer sample",
       },
       {
         field: "matrix",
         headerName: "Matrix",
-        width: 120,
+        cellDataType: "text",
+        minWidth: 100,
+        initialWidth: 120,
         filter: "agTextColumnFilter",
         sortable: true,
         editable: true,
+        headerTooltip: "Sample matrix type",
       },
       {
         field: "compositeStartDate",
-        headerName: "Composite Start(Date)",
-        width: 180,
+        headerName: "Composite Start (Date)",
+        cellDataType: "text",
+        minWidth: 140,
+        initialWidth: 160,
         filter: "agDateColumnFilter",
         sortable: true,
         editable: true,
+        headerTooltip: "Date when composite sampling started",
       },
       {
         field: "compositeStartTime",
-        headerName: "Composite Start(Time)",
-        width: 180,
+        headerName: "Composite Start (Time)",
+        cellDataType: "text",
+        minWidth: 140,
+        initialWidth: 160,
         filter: "agTextColumnFilter",
         sortable: true,
         editable: true,
+        headerTooltip: "Time when composite sampling started",
       },
       {
         field: "method",
         headerName: "Method",
-        width: 120,
+        cellDataType: "text",
+        minWidth: 120,
+        initialWidth: 140,
         filter: "agTextColumnFilter",
         sortable: true,
         editable: true,
+        headerTooltip: "Analysis method used",
       },
       {
         headerName: "Actions",
-        width: 100,
+        colId: "actions",
+        minWidth: 80,
+        initialWidth: 100,
         cellRenderer: ActionCellRenderer,
         pinned: "right",
         sortable: false,
         filter: false,
+        resizable: false,
+        headerTooltip: "Row actions",
       },
     ],
     []
@@ -485,22 +506,35 @@ export function SampleDataGrid({
         <div className="space-y-4">
           {/* Non-sample fields */}
           {nonSampleData.length > 0 && (
-            <div className="bg-gradient-to-r from-slate-50 to-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-6 w-1 bg-slate-500 rounded-full"></div>
-                <h4 className="text-sm font-semibold text-gray-800">
+            <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 p-8 rounded-2xl border border-blue-200 shadow-lg">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="h-8 w-2 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full shadow-sm"></div>
+                <h4 className="text-lg font-bold text-gray-800 tracking-wide">
                   General Information
                 </h4>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 {nonSampleData.map((field) => (
                   <div
                     key={field.id}
-                    className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-100 shadow-sm"
+                    className="group bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:border-blue-300"
                   >
-                    <label className="text-xs font-medium text-gray-700 min-w-[100px]">
-                      {field.fieldName}:
-                    </label>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                        {field.fieldName}
+                      </label>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          onRemoveField?.(field.sectionType, field.originalIndex)
+                        }
+                        className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 transition-colors duration-200 rounded-full opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <input
                       type="text"
                       aria-label={field.fieldName}
@@ -512,18 +546,25 @@ export function SampleDataGrid({
                           e.target.value
                         )
                       }
-                      className="flex-1 text-xs border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      className="w-full text-sm border-2 border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                      placeholder={`Enter ${field.fieldName.toLowerCase()}...`}
                     />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        onRemoveField?.(field.sectionType, field.originalIndex)
-                      }
-                      className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 transition-colors duration-200 rounded-full"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {field.confidence && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="text-xs text-gray-500">Confidence:</span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-300"
+                              style={{ width: `${field.confidence * 100}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-xs text-gray-600 font-medium">
+                            {Math.round(field.confidence * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -546,12 +587,10 @@ export function SampleDataGrid({
           {/* AG Grid */}
           <div className="w-full overflow-hidden border border-gray-200 rounded-xl shadow-sm">
             <div
-              style={{ height: "400px", width: "100%" }}
-              className="ag-theme-alpine"
+              className={`ag-theme-quartz ${styles.grid} ${styles.gridWithBorders} ${styles.gridHeight}`}
             >
               <AgGridReact
                 ref={gridRef}
-                theme={themeQuartz}
                 rowData={sampleData}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}

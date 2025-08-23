@@ -1,0 +1,73 @@
+/* Sample Data Grid Module CSS - Following AG Grid Enterprise Pattern */
+
+.grid {
+  --ag-value-change-value-highlight-background-color: #44ad4961;
+  --ag-value-change-delta-down-color: rgb(255, 0, 92);
+  --ag-value-change-delta-up-color: rgb(53, 182, 90);
+  --ag-font-family: ui-sans-serif, system-ui, sans-serif;
+  --ag-font-size: 13px;
+  --ag-row-height: 42px;
+  --ag-header-height: 48px;
+  --ag-border-color: #d1d5db;
+  --ag-header-border-color: #9ca3af;
+}
+
+.gridHeight {
+  height: 400px;
+  width: 100%;
+}
+
+.gridWithBorders :global(.ag-cell) {
+  border-right: 1px solid var(--ag-border-color) !important;
+  border-bottom: 1px solid var(--ag-border-color) !important;
+}
+
+.gridWithBorders :global(.ag-header-cell) {
+  border-right: 1px solid var(--ag-header-border-color) !important;
+  border-bottom: 2px solid #6b7280 !important;
+  background-color: #f9fafb !important;
+}
+
+.gridWithBorders :global(.ag-row) {
+  border-bottom: 1px solid var(--ag-border-color) !important;
+}
+
+/* Force borders on all cells using role selectors */
+.gridWithBorders :global(div[role="gridcell"]) {
+  border-right: 1px solid var(--ag-border-color) !important;
+  border-bottom: 1px solid var(--ag-border-color) !important;
+}
+
+.gridWithBorders :global(div[role="columnheader"]) {
+  border-right: 1px solid var(--ag-header-border-color) !important;
+  border-bottom: 2px solid #6b7280 !important;
+  background-color: #f9fafb !important;
+}
+
+@media screen and (max-width: 720px) {
+  .grid {
+    --ag-font-size: 12px;
+    --ag-grid-size: 6px;
+  }
+}
+
+/* Container styling */
+.container {
+  width: 100%;
+}
+
+/* Confidence progress bar styles */
+.confidenceBar {
+  width: 64px;
+  height: 8px;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.confidenceProgress {
+  height: 100%;
+  background: linear-gradient(to right, #10b981, #059669);
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
