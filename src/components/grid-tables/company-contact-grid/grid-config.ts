@@ -21,6 +21,11 @@ export const getCompanyContactColumnDefs = (onFieldChange?: (sectionType: string
     sortable: true,
     editable: true,
     onCellValueChanged: (params) => {
+      // Skip callback for newly added rows to prevent deletion
+      if (params.data.originalIndex === -1) {
+        return;
+      }
+      
       if (
         onFieldChange &&
         params.data.sectionType &&
@@ -48,11 +53,13 @@ export const getCompanyContactColumnDefs = (onFieldChange?: (sectionType: string
   },
   {
     headerName: "Actions",
+    colId: "actions",
     width: 100,
     cellRenderer: ActionsCellRenderer,
     pinned: "right",
     sortable: false,
     filter: false,
+    resizable: false,
   },
 ];
 

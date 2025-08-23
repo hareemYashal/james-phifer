@@ -27,19 +27,12 @@ export const ActionsCellRenderer = (params: any) => {
   };
 
   return (
-    <div className="flex gap-2">
-      <Button 
-        size="sm" 
-        variant="destructive" 
+    <div className="flex justify-center items-center h-full">
+      <Button
+        size="sm"
+        variant="ghost"
         onClick={onDelete}
-        onKeyDown={(e) => {
-          // Prevent Enter key from triggering button click
-          if (e.key === 'Enter') {
-            e.stopPropagation();
-            e.preventDefault();
-          }
-        }}
-        tabIndex={-1} // Remove from tab order to prevent accidental focus
+        className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 transition-colors duration-200 rounded-full"
       >
         <Trash2 className="h-4 w-4" />
       </Button>

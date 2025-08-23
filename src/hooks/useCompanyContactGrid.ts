@@ -110,9 +110,15 @@ export const useCompanyContactGrid = ({
   }, []);
 
   const handleDeleteSelected = useCallback(() => {
-    if (selectedRows.length > 0 && onRemoveField) {
+    if (selectedRows.length > 0) {
       selectedRows.forEach((row) => {
-        if (row.sectionType && row.originalIndex !== undefined) {
+        // Handle newly added rows (originalIndex === -1) with transaction API
+        if (row.originalIndex === -1) {
+          if (gridRef.current?.api) {
+            gridRef.current.api.applyTransaction({ remove: [row] });
+          }
+        } else if (onRemoveField && row.sectionType && row.originalIndex !== undefined) {
+          // Handle existing rows with field removal
           onRemoveField(row.sectionType, row.originalIndex);
         }
       });

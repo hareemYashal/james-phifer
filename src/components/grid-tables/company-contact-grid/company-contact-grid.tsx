@@ -106,6 +106,7 @@ export function CompanyContactGrid({
                 suppressHorizontalScroll={false}
                 enterNavigatesVertically={true}
                 enterNavigatesVerticallyAfterEdit={true}
+                stopEditingWhenCellsLoseFocus={true}
                 context={{ onRemoveField }}
               />
             </div>
