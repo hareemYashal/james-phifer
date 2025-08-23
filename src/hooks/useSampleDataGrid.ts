@@ -63,6 +63,7 @@ export const useSampleDataGrid = ({
       compositeStartDate: "",
       compositeStartTime: "",
       method: "",
+      grab: "",
     };
 
     // Use AG Grid's transaction API to add row without full re-render
