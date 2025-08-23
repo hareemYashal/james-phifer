@@ -70,10 +70,11 @@ const ActionsCellRenderer = (params: any) => {
   );
 };
 
-// Helper function to transform data (matching custom table logic)
+// Transform data for AG Grid (matching custom table logic exactly)
 const transformSampleData = (
   collectedSampleDataInfo: any[]
 ): { sampleRows: SampleDataRowData[], nonSampleFields: NonSampleFieldData[] } => {
+  // Group items by sample number (1-10) and separate non-sample fields
   const groupedSamples: Record<string, any> = {};
   const nonSampleFields: NonSampleFieldData[] = [];
 
@@ -81,7 +82,7 @@ const transformSampleData = (
     const type = item.type;
     let sampleNumber = '';
 
-    // Extract sample number from field type (matching custom table logic)
+    // Extract sample number from field type (matching custom table logic exactly)
     if (type.includes('customer_sample_id_')) {
       const match = type.match(/customer_sample_id_(\d+)(?:_.*)?/);
       if (match) {
@@ -125,42 +126,48 @@ const transformSampleData = (
   const sampleNumbers = Object.keys(groupedSamples).sort((a, b) => parseInt(a) - parseInt(b));
   const allSampleRows: SampleDataRowData[] = [];
 
+  // Function to separate date and time from combined values (matching custom table)
+  const separateDateTime = (value: string) => {
+    if (!value) return { date: '', time: '' };
+    const datePattern = /^(\d{1,2}[-\/]\d{1,2}[-\/]\d{2})(.*)$/;
+    const match = value.match(datePattern);
+    if (match) {
+      return { date: match[1], time: match[2] };
+    }
+    return { date: '', time: value };
+  };
+
   sampleNumbers.forEach(sampleNum => {
     const sample = groupedSamples[sampleNum];
     const sampleId = sample[`customer_sample_id_${sampleNum}`];
     const matrix = sample[`customer_sample_id_${sampleNum}_matrix`];
-    const comp = sample[`customer_sample_id_${sampleNum}_comp`];
     const rawStartDate = sample[`customer_sample_id_${sampleNum}_start_date`];
     const rawStartTime = sample[`customer_sample_id_${sampleNum}_start_time`];
-    const rawEndDate = sample[`customer_sample_id_${sampleNum}_end_date`];
-    const rawEndTime = sample[`customer_sample_id_${sampleNum}_end_time`];
     const analysisRequest = sample[`analysis_request_${sampleNum}`];
 
-    // Process date/time separation
-    const separateDateTime = (value: string) => {
-      if (!value) return { date: '', time: '' };
-      const datePattern = /^(\d{1,2}[-\/]\d{1,2}[-\/]\d{2})(.*)$/;
-      const match = value.match(datePattern);
-      if (match) {
-        return { date: match[1], time: match[2] };
-      }
-      return { date: '', time: value };
-    };
-
-    let startDate = rawStartDate?.value || rawEndDate?.value || '';
-    let startTime = rawStartTime?.value || rawEndTime?.value || '';
-    
-    if (rawEndDate?.value) {
-      const separated = separateDateTime(rawEndDate.value);
+    // Process startDate and startTime (matching custom table logic)
+    let startDate = rawStartDate;
+    let startTime = rawStartTime;
+    if (rawStartDate?.value) {
+      const separated = separateDateTime(rawStartDate.value);
       if (separated.date) {
-        startDate = separated.date;
-        if (separated.time && !rawEndTime?.value) {
-          startTime = separated.time;
+        startDate = { ...rawStartDate, value: separated.date };
+        if (separated.time && !rawStartTime?.value) {
+          startTime = {
+            ...rawStartDate,
+            value: separated.time,
+            type: `customer_sample_id_${sampleNum}_start_time`,
+            originalIndex: -1
+          };
         }
       }
     }
 
-    // Find all active analysis methods for this sample
+    // Only process if at least one field exists for this sample
+    const hasData = sampleId || matrix || startDate || startTime || analysisRequest;
+    if (!hasData) return;
+
+    // Find all active analysis methods for this sample (matching custom table logic)
     const activeAnalysisMethods: any[] = [];
 
     // Check each analysis method (01-10)
@@ -174,23 +181,24 @@ const transformSampleData = (
       }
 
       if (analysisField) {
+        const methodValue = analysisField.value || '';
         activeAnalysisMethods.push({
-          methodValue: analysisField.value || '',
+          methodValue,
           analysisField,
           analysisNum
         });
       }
     }
 
-    // Create rows for each analysis method or fallback
+    // If no active analysis methods, check for fallback analysis_request
     if (activeAnalysisMethods.length === 0) {
       if (analysisRequest) {
         allSampleRows.push({
           id: `${sampleNum}-analysis-request-fallback`,
           customerSampleId: sampleId?.value || '',
           matrix: matrix?.value || '',
-          compositeStartDate: startDate,
-          compositeStartTime: startTime,
+          compositeStartDate: startDate?.value || '',
+          compositeStartTime: startTime?.value || '',
           method: analysisRequest.value || '',
           sectionType: 'collectedSampleDataInfo',
           originalIndex: analysisRequest.originalIndex
@@ -200,21 +208,22 @@ const transformSampleData = (
           id: `${sampleNum}-default`,
           customerSampleId: sampleId?.value || '',
           matrix: matrix?.value || '',
-          compositeStartDate: startDate,
-          compositeStartTime: startTime,
+          compositeStartDate: startDate?.value || '',
+          compositeStartTime: startTime?.value || '',
           method: '',
           sectionType: 'collectedSampleDataInfo',
           originalIndex: sampleId?.originalIndex || 0
         });
       }
     } else {
+      // Create a row for each active analysis method
       activeAnalysisMethods.forEach((method, methodIndex) => {
         allSampleRows.push({
           id: `${sampleNum}-${method.analysisNum}-${methodIndex}`,
           customerSampleId: sampleId?.value || '',
           matrix: matrix?.value || '',
-          compositeStartDate: startDate,
-          compositeStartTime: startTime,
+          compositeStartDate: startDate?.value || '',
+          compositeStartTime: startTime?.value || '',
           method: method.methodValue,
           sectionType: 'collectedSampleDataInfo',
           originalIndex: method.analysisField.originalIndex
