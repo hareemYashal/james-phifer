@@ -9,6 +9,7 @@ import type {
   GridReadyEvent,
   SelectionChangedEvent,
   CellValueChangedEvent,
+  ICellRendererParams,
 } from "ag-grid-community";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,22 +49,21 @@ interface SampleDataGridProps {
 }
 
 // Custom cell renderers
-const ActionsCellRenderer = (params: any) => {
-  const { onRemoveField } = params.context || {};
-
+const ActionCellRenderer: React.FC<ICellRendererParams> = ({ data, api }) => {
   const onDelete = () => {
-    if (
-      onRemoveField &&
-      params.data.sectionType !== undefined &&
-      params.data.originalIndex !== undefined
-    ) {
-      onRemoveField(params.data.sectionType, params.data.originalIndex);
+    if (data && api) {
+      api.applyTransaction({ remove: [data] });
     }
   };
 
   return (
-    <div className="flex gap-2">
-      <Button size="sm" variant="destructive" onClick={onDelete}>
+    <div className="flex justify-center items-center h-full">
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={onDelete}
+        className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 transition-colors duration-200 rounded-full"
+      >
         <Trash2 className="h-4 w-4" />
       </Button>
     </div>
@@ -73,27 +73,30 @@ const ActionsCellRenderer = (params: any) => {
 // Transform data for AG Grid (matching custom table logic exactly)
 const transformSampleData = (
   collectedSampleDataInfo: any[]
-): { sampleRows: SampleDataRowData[], nonSampleFields: NonSampleFieldData[] } => {
+): {
+  sampleRows: SampleDataRowData[];
+  nonSampleFields: NonSampleFieldData[];
+} => {
   // Group items by sample number (1-10) and separate non-sample fields
   const groupedSamples: Record<string, any> = {};
   const nonSampleFields: NonSampleFieldData[] = [];
 
   collectedSampleDataInfo.forEach((item, index) => {
     const type = item.type;
-    let sampleNumber = '';
+    let sampleNumber = "";
 
     // Extract sample number from field type (matching custom table logic exactly)
-    if (type.includes('customer_sample_id_')) {
+    if (type.includes("customer_sample_id_")) {
       const match = type.match(/customer_sample_id_(\d+)(?:_.*)?/);
       if (match) {
         sampleNumber = match[1];
       }
-    } else if (type.includes('sample_id_')) {
+    } else if (type.includes("sample_id_")) {
       const match = type.match(/sample_id_(\d+)_/);
       if (match) {
         sampleNumber = match[1];
       }
-    } else if (type.includes('analysis_request_')) {
+    } else if (type.includes("analysis_request_")) {
       const match = type.match(/analysis_request_(\d+)/);
       if (match) {
         sampleNumber = match[1];
@@ -108,10 +111,10 @@ const transformSampleData = (
       nonSampleFields.push({
         id: `non_sample_${index}`,
         fieldName: formatEntityTypeToDisplayName(type),
-        value: item.value || '',
+        value: item.value || "",
         confidence: item.confidence || 0.9,
-        sectionType: 'collectedSampleDataInfo',
-        originalIndex: index
+        sectionType: "collectedSampleDataInfo",
+        originalIndex: index,
       });
     }
 
@@ -123,21 +126,23 @@ const transformSampleData = (
     }
   });
 
-  const sampleNumbers = Object.keys(groupedSamples).sort((a, b) => parseInt(a) - parseInt(b));
+  const sampleNumbers = Object.keys(groupedSamples).sort(
+    (a, b) => parseInt(a) - parseInt(b)
+  );
   const allSampleRows: SampleDataRowData[] = [];
 
   // Function to separate date and time from combined values (matching custom table)
   const separateDateTime = (value: string) => {
-    if (!value) return { date: '', time: '' };
+    if (!value) return { date: "", time: "" };
     const datePattern = /^(\d{1,2}[-\/]\d{1,2}[-\/]\d{2})(.*)$/;
     const match = value.match(datePattern);
     if (match) {
       return { date: match[1], time: match[2] };
     }
-    return { date: '', time: value };
+    return { date: "", time: value };
   };
 
-  sampleNumbers.forEach(sampleNum => {
+  sampleNumbers.forEach((sampleNum) => {
     const sample = groupedSamples[sampleNum];
     const sampleId = sample[`customer_sample_id_${sampleNum}`];
     const matrix = sample[`customer_sample_id_${sampleNum}_matrix`];
@@ -157,14 +162,15 @@ const transformSampleData = (
             ...rawStartDate,
             value: separated.time,
             type: `customer_sample_id_${sampleNum}_start_time`,
-            originalIndex: -1
+            originalIndex: -1,
           };
         }
       }
     }
 
     // Only process if at least one field exists for this sample
-    const hasData = sampleId || matrix || startDate || startTime || analysisRequest;
+    const hasData =
+      sampleId || matrix || startDate || startTime || analysisRequest;
     if (!hasData) return;
 
     // Find all active analysis methods for this sample (matching custom table logic)
@@ -172,20 +178,23 @@ const transformSampleData = (
 
     // Check each analysis method (01-10)
     for (let i = 1; i <= 10; i++) {
-      const analysisNum = i.toString().padStart(2, '0');
-      const fieldType = `Sample${sampleNum.padStart(2, '0')}_analysis${analysisNum}`;
+      const analysisNum = i.toString().padStart(2, "0");
+      const fieldType = `Sample${sampleNum.padStart(
+        2,
+        "0"
+      )}_analysis${analysisNum}`;
       let analysisField = sample[fieldType];
 
-      if (!analysisField && groupedSamples[sampleNum.padStart(2, '0')]) {
-        analysisField = groupedSamples[sampleNum.padStart(2, '0')][fieldType];
+      if (!analysisField && groupedSamples[sampleNum.padStart(2, "0")]) {
+        analysisField = groupedSamples[sampleNum.padStart(2, "0")][fieldType];
       }
 
       if (analysisField) {
-        const methodValue = analysisField.value || '';
+        const methodValue = analysisField.value || "";
         activeAnalysisMethods.push({
           methodValue,
           analysisField,
-          analysisNum
+          analysisNum,
         });
       }
     }
@@ -195,24 +204,24 @@ const transformSampleData = (
       if (analysisRequest) {
         allSampleRows.push({
           id: `${sampleNum}-analysis-request-fallback`,
-          customerSampleId: sampleId?.value || '',
-          matrix: matrix?.value || '',
-          compositeStartDate: startDate?.value || '',
-          compositeStartTime: startTime?.value || '',
-          method: analysisRequest.value || '',
-          sectionType: 'collectedSampleDataInfo',
-          originalIndex: analysisRequest.originalIndex
+          customerSampleId: sampleId?.value || "",
+          matrix: matrix?.value || "",
+          compositeStartDate: startDate?.value || "",
+          compositeStartTime: startTime?.value || "",
+          method: analysisRequest.value || "",
+          sectionType: "collectedSampleDataInfo",
+          originalIndex: analysisRequest.originalIndex,
         });
       } else {
         allSampleRows.push({
           id: `${sampleNum}-default`,
-          customerSampleId: sampleId?.value || '',
-          matrix: matrix?.value || '',
-          compositeStartDate: startDate?.value || '',
-          compositeStartTime: startTime?.value || '',
-          method: '',
-          sectionType: 'collectedSampleDataInfo',
-          originalIndex: sampleId?.originalIndex || 0
+          customerSampleId: sampleId?.value || "",
+          matrix: matrix?.value || "",
+          compositeStartDate: startDate?.value || "",
+          compositeStartTime: startTime?.value || "",
+          method: "",
+          sectionType: "collectedSampleDataInfo",
+          originalIndex: sampleId?.originalIndex || 0,
         });
       }
     } else {
@@ -220,13 +229,13 @@ const transformSampleData = (
       activeAnalysisMethods.forEach((method, methodIndex) => {
         allSampleRows.push({
           id: `${sampleNum}-${method.analysisNum}-${methodIndex}`,
-          customerSampleId: sampleId?.value || '',
-          matrix: matrix?.value || '',
-          compositeStartDate: startDate?.value || '',
-          compositeStartTime: startTime?.value || '',
+          customerSampleId: sampleId?.value || "",
+          matrix: matrix?.value || "",
+          compositeStartDate: startDate?.value || "",
+          compositeStartTime: startTime?.value || "",
           method: method.methodValue,
-          sectionType: 'collectedSampleDataInfo',
-          originalIndex: method.analysisField.originalIndex
+          sectionType: "collectedSampleDataInfo",
+          originalIndex: method.analysisField.originalIndex,
         });
       });
     }
@@ -294,7 +303,7 @@ export function SampleDataGrid({
       {
         headerName: "Actions",
         width: 100,
-        cellRenderer: ActionsCellRenderer,
+        cellRenderer: ActionCellRenderer,
         pinned: "right",
         sortable: false,
         filter: false,
@@ -441,22 +450,30 @@ export function SampleDataGrid({
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="w-full shadow-lg border-0 bg-white">
+      <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
         <CardTitle className="flex items-center justify-between">
-          <span>Collected Sample Data Information and Analysis Request</span>
-          <div className="flex gap-2">
-            <Button onClick={handleExport} size="sm" variant="outline">
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-1 bg-blue-500 rounded-full"></div>
+            <span className="text-lg font-semibold text-gray-800">
+              Sample Data Information
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
             {selectedRows.length > 0 && (
               <Button
-                onClick={handleDeleteSelected}
                 size="sm"
                 variant="destructive"
+                onClick={() => {
+                  if (gridRef.current?.api) {
+                    gridRef.current.api.applyTransaction({
+                      remove: selectedRows,
+                    });
+                  }
+                }}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 shadow-sm"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-4 mr-2" />
                 Delete ({selectedRows.length})
               </Button>
             )}
@@ -467,27 +484,43 @@ export function SampleDataGrid({
         <div className="space-y-4">
           {/* Non-sample fields */}
           {nonSampleData.length > 0 && (
-            <div className="bg-gray-50 p-4 rounded-lg border">
-              <h4 className="text-sm font-semibold mb-3 text-gray-700">General Information</h4>
+            <div className="bg-gradient-to-r from-slate-50 to-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-6 w-1 bg-slate-500 rounded-full"></div>
+                <h4 className="text-sm font-semibold text-gray-800">
+                  General Information
+                </h4>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {nonSampleData.map((field) => (
-                  <div key={field.id} className="flex items-center gap-2">
-                    <label className="text-xs font-medium text-gray-600 min-w-[100px]">
+                  <div
+                    key={field.id}
+                    className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-100 shadow-sm"
+                  >
+                    <label className="text-xs font-medium text-gray-700 min-w-[100px]">
                       {field.fieldName}:
                     </label>
                     <input
                       type="text"
                       value={field.value}
-                      onChange={(e) => onFieldChange?.(field.sectionType, field.originalIndex, e.target.value)}
-                      className="flex-1 text-xs border border-gray-300 rounded px-2 py-1"
+                      onChange={(e) =>
+                        onFieldChange?.(
+                          field.sectionType,
+                          field.originalIndex,
+                          e.target.value
+                        )
+                      }
+                      className="flex-1 text-xs border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     />
                     <Button
                       size="sm"
-                      variant="destructive"
-                      onClick={() => onRemoveField?.(field.sectionType, field.originalIndex)}
-                      className="h-6 w-6 p-0"
+                      variant="ghost"
+                      onClick={() =>
+                        onRemoveField?.(field.sectionType, field.originalIndex)
+                      }
+                      className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 transition-colors duration-200 rounded-full"
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}
@@ -496,15 +529,24 @@ export function SampleDataGrid({
           )}
 
           {selectedRows.length > 0 && (
-            <Badge variant="secondary">
-              {selectedRows.length} row{selectedRows.length !== 1 ? "s" : ""}{" "}
-              selected
-            </Badge>
+            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <Badge
+                variant="secondary"
+                className="bg-blue-100 text-blue-800 border-blue-200"
+              >
+                {selectedRows.length} row{selectedRows.length !== 1 ? "s" : ""}{" "}
+                selected
+              </Badge>
+            </div>
           )}
 
           {/* AG Grid */}
-          <div className="w-full overflow-hidden border rounded-lg">
-            <div style={{ height: "400px", width: "100%" }}>
+          <div className="w-full overflow-hidden border border-gray-200 rounded-xl shadow-sm">
+            <div
+              style={{ height: "400px", width: "100%" }}
+              className="ag-theme-alpine"
+            >
               <AgGridReact
                 theme={themeQuartz}
                 rowData={sampleData}
