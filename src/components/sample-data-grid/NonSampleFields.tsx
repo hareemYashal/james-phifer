@@ -3,6 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import type { NonSampleFieldData } from "@/lib/sample-data-utils";
 
+const ConfidenceBar: React.FC<{ confidence: number }> = ({ confidence }) => (
+  <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+    <div
+      className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-300"
+      style={{ width: `${confidence * 100}%` }}
+    />
+  </div>
+);
+
 interface NonSampleFieldsProps {
   nonSampleData: NonSampleFieldData[];
   onFieldChange?: (sectionType: string, index: number, value: string) => void;
@@ -69,7 +78,7 @@ export const NonSampleFields: React.FC<NonSampleFieldsProps> = ({
                   <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-300"
-                      style={{ width: `${field.confidence * 100}%` }}
+                      data-confidence={field.confidence}
                     ></div>
                   </div>
                   <span className="text-xs text-gray-600 font-medium">
