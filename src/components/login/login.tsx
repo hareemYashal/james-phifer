@@ -25,15 +25,15 @@ const Login = () => {
 
   const handleGoogleLogin = async () => {
     setError(null);
-    
+
     // Get the base URL from environment or use current origin
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
-    
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${baseUrl}/auth/callback`,
-      },
+      // options: {
+      //   redirectTo: `${baseUrl}/auth/callback`,
+      // },
     });
 
     if (error) {
