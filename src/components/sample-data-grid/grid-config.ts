@@ -1,0 +1,83 @@
+import type { ColDef } from "ag-grid-community";
+import { ActionCellRenderer } from "./ActionCellRenderer";
+
+// Column definitions with improved configuration
+export const getColumnDefs = (): ColDef[] => [
+  {
+    field: "customerSampleId",
+    headerName: "Customer Sample ID",
+    cellDataType: "text",
+    minWidth: 160,
+    initialWidth: 180,
+    pinned: "left",
+    filter: "agTextColumnFilter",
+    sortable: true,
+    editable: true,
+    headerTooltip: "Unique identifier for the customer sample",
+  },
+  {
+    field: "matrix",
+    headerName: "Matrix",
+    cellDataType: "text",
+    minWidth: 100,
+    initialWidth: 120,
+    filter: "agTextColumnFilter",
+    sortable: true,
+    editable: true,
+    headerTooltip: "Sample matrix type",
+  },
+  {
+    field: "compositeStartDate",
+    headerName: "Composite Start (Date)",
+    cellDataType: "text",
+    minWidth: 140,
+    initialWidth: 160,
+    filter: "agDateColumnFilter",
+    sortable: true,
+    editable: true,
+    headerTooltip: "Date when composite sampling started",
+  },
+  {
+    field: "compositeStartTime",
+    headerName: "Composite Start (Time)",
+    cellDataType: "text",
+    minWidth: 140,
+    initialWidth: 160,
+    filter: "agTextColumnFilter",
+    sortable: true,
+    editable: true,
+    headerTooltip: "Time when composite sampling started",
+  },
+  {
+    field: "method",
+    headerName: "Method",
+    cellDataType: "text",
+    minWidth: 120,
+    initialWidth: 140,
+    filter: "agTextColumnFilter",
+    sortable: true,
+    editable: true,
+    headerTooltip: "Analysis method used",
+  },
+  {
+    headerName: "Actions",
+    colId: "actions",
+    minWidth: 80,
+    initialWidth: 100,
+    cellRenderer: ActionCellRenderer,
+    pinned: "right",
+    sortable: false,
+    filter: false,
+    resizable: false,
+    headerTooltip: "Row actions",
+  },
+];
+
+// Default column properties
+export const defaultColDef: ColDef = {
+  resizable: true,
+  sortable: true,
+  filter: true,
+  minWidth: 100,
+  flex: 1,
+};

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
 import "ag-grid-community/styles/ag-grid.css";
@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Download } from "lucide-react";
+import { Trash2, Download, Plus } from "lucide-react";
 import { formatEntityTypeToDisplayName } from "@/lib/utils";
 import styles from "./CompanyContactGrid.module.css";
 
@@ -120,6 +120,7 @@ export function CompanyContactGrid({
   onFieldChange,
   onRemoveField,
 }: CompanyContactGridProps) {
+  const gridRef = useRef<AgGridReact>(null);
   const [companyContactData, setCompanyContactData] = useState<
     CompanyContactRowData[]
   >([]);
@@ -136,6 +137,7 @@ export function CompanyContactGrid({
         pinned: "left",
         filter: "agTextColumnFilter",
         sortable: true,
+        editable: true,
       },
       {
         field: "value",
@@ -165,6 +167,11 @@ export function CompanyContactGrid({
         width: 200,
         filter: "agSetColumnFilter",
         sortable: true,
+        editable: true,
+        cellEditor: "agSelectCellEditor",
+        cellEditorParams: {
+          values: ["Company & Location Information", "Contact & Project Information"]
+        },
       },
       {
         headerName: "Actions",
@@ -274,11 +281,51 @@ export function CompanyContactGrid({
 
   const onCellValueChanged = useCallback((event: CellValueChangedEvent) => {
     console.log("Cell value changed:", event);
-  }, []);
+    
+    // Update the local state when cells are edited
+    const updatedData = companyContactData.map(row => 
+      row.id === event.data.id ? { ...row, [event.colDef.field!]: event.newValue } : row
+    );
+    setCompanyContactData(updatedData);
+
+    // Call the original onFieldChange callback for value field only
+    if (event.colDef.field === "value" && onFieldChange && 
+        event.data.sectionType && event.data.originalIndex !== undefined) {
+      onFieldChange(
+        event.data.sectionType,
+        event.data.originalIndex,
+        event.newValue
+      );
+    }
+  }, [companyContactData, onFieldChange]);
 
   // Action handlers
   const handleExport = () => {
     console.log("Exporting company contact data...", companyContactData);
+  };
+
+  const handleAddRow = () => {
+    const newRow: CompanyContactRowData = {
+      id: `new_${Date.now()}`,
+      fieldName: "",
+      value: "",
+      confidence: 1.0,
+      section: "Company & Location Information",
+      sectionType: "companyLocationInfo",
+      originalIndex: -1, // Mark as new row
+    };
+
+    // Update React state to persist the new row
+    const updatedData = [...companyContactData, newRow];
+    setCompanyContactData(updatedData);
+
+    // Start editing the new row after state update
+    setTimeout(() => {
+      gridRef.current?.api.startEditingCell({
+        rowIndex: updatedData.length - 1,
+        colKey: "fieldName",
+      });
+    }, 100);
   };
 
   const handleDeleteSelected = () => {
@@ -298,6 +345,10 @@ export function CompanyContactGrid({
         <CardTitle className="flex items-center justify-between">
           <span>Company & Location + Contact & Project Information</span>
           <div className="flex gap-2">
+            <Button onClick={handleAddRow} size="sm" variant="default">
+              <Plus className="h-4 w-4" />
+              Add Row
+            </Button>
             <Button onClick={handleExport} size="sm" variant="outline">
               <Download className="h-4 w-4" />
               Export
@@ -337,6 +388,7 @@ export function CompanyContactGrid({
           <div className="w-full overflow-hidden border rounded-lg">
             <div className={`ag-theme-quartz ${styles.grid} ${styles.gridWithBorders} ${styles.gridHeight}`}>
               <AgGridReact
+                ref={gridRef}
                 rowData={companyContactData}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
@@ -351,6 +403,8 @@ export function CompanyContactGrid({
                 animateRows={true}
                 loading={false}
                 suppressHorizontalScroll={false}
+                enterNavigatesVertically={true}
+                enterNavigatesVerticallyAfterEdit={true}
                 context={{ onRemoveField }}
               />
             </div>
