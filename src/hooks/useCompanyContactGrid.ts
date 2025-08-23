@@ -55,12 +55,20 @@ export const useCompanyContactGrid = ({
   const onCellValueChanged = useCallback(
     (event: CellValueChangedEvent) => {
       console.log("Cell value changed:", event);
+      
+      // Skip callback for newly added rows to prevent deletion
+      if (event.data.originalIndex === -1) {
+        console.log("Skipping onFieldChange for new row");
+        return;
+      }
+      
       if (
         event.colDef.field === "value" &&
         onFieldChange &&
         event.data.sectionType &&
         event.data.originalIndex !== undefined
       ) {
+        console.log("Calling onFieldChange for existing row");
         onFieldChange(
           event.data.sectionType,
           event.data.originalIndex,
@@ -87,13 +95,19 @@ export const useCompanyContactGrid = ({
       originalIndex: -1, // Mark as new row
     };
 
+    console.log('Adding new row:', newRow);
+
     // Use AG Grid's transaction API to add row without full re-render
     if (gridRef.current?.api) {
       const transaction = { add: [newRow] };
       gridRef.current.api.applyTransaction(transaction);
 
       // Update React state
-      setCompanyContactData((prev) => [...prev, newRow]);
+      setCompanyContactData((prev) => {
+        const updated = [...prev, newRow];
+        console.log('Updated company contact data:', updated);
+        return updated;
+      });
 
       // Start editing the new row
       setTimeout(() => {
