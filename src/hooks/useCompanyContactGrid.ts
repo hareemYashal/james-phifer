@@ -1,15 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import type { AgGridReact } from "ag-grid-react";
+import {
+  transformCompanyContactData,
+  type CompanyContactRowData,
+} from "@/lib/company-contact-utils";
 import type {
+  CellValueChangedEvent,
   GridReadyEvent,
   SelectionChangedEvent,
-  CellValueChangedEvent,
 } from "ag-grid-community";
-import { 
-  transformCompanyContactData, 
-  getSampleCompanyContactData,
-  type CompanyContactRowData 
-} from "@/lib/company-contact-utils";
+import type { AgGridReact } from "ag-grid-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseCompanyContactGridProps {
   categorizedSections?: {
@@ -20,13 +19,15 @@ interface UseCompanyContactGridProps {
   onRemoveField?: (sectionType: string, index: number) => void;
 }
 
-export const useCompanyContactGrid = ({ 
-  categorizedSections, 
+export const useCompanyContactGrid = ({
+  categorizedSections,
   onFieldChange,
-  onRemoveField 
+  onRemoveField,
 }: UseCompanyContactGridProps) => {
   const gridRef = useRef<AgGridReact>(null);
-  const [companyContactData, setCompanyContactData] = useState<CompanyContactRowData[]>([]);
+  const [companyContactData, setCompanyContactData] = useState<
+    CompanyContactRowData[]
+  >([]);
   const [selectedRows, setSelectedRows] = useState<CompanyContactRowData[]>([]);
   const [quickFilterText, setQuickFilterText] = useState("");
 
@@ -38,12 +39,7 @@ export const useCompanyContactGrid = ({
         categorizedSections.contactProjectInfo || []
       );
 
-      // If no real data, add some sample data to show the table working
-      if (companyContactTransformed.length === 0) {
-        setCompanyContactData(getSampleCompanyContactData());
-      } else {
-        setCompanyContactData(companyContactTransformed);
-      }
+      setCompanyContactData(companyContactTransformed);
     }
   }, [categorizedSections]);
 
@@ -56,25 +52,24 @@ export const useCompanyContactGrid = ({
     setSelectedRows(event.api.getSelectedRows());
   }, []);
 
-  const onCellValueChanged = useCallback((event: CellValueChangedEvent) => {
-    console.log("Cell value changed:", event);
-    
-    // Update the local state when cells are edited
-    const updatedData = companyContactData.map(row => 
-      row.id === event.data.id ? { ...row, [event.colDef.field!]: event.newValue } : row
-    );
-    setCompanyContactData(updatedData);
-
-    // Call the original onFieldChange callback for value field only
-    if (event.colDef.field === "value" && onFieldChange && 
-        event.data.sectionType && event.data.originalIndex !== undefined) {
-      onFieldChange(
-        event.data.sectionType,
-        event.data.originalIndex,
-        event.newValue
-      );
-    }
-  }, [companyContactData, onFieldChange]);
+  const onCellValueChanged = useCallback(
+    (event: CellValueChangedEvent) => {
+      console.log("Cell value changed:", event);
+      if (
+        event.colDef.field === "value" &&
+        onFieldChange &&
+        event.data.sectionType &&
+        event.data.originalIndex !== undefined
+      ) {
+        onFieldChange(
+          event.data.sectionType,
+          event.data.originalIndex,
+          event.newValue
+        );
+      }
+    },
+    [onFieldChange]
+  );
 
   // Action handlers
   const handleExport = useCallback(() => {
@@ -92,18 +87,27 @@ export const useCompanyContactGrid = ({
       originalIndex: -1, // Mark as new row
     };
 
-    // Update React state to persist the new row
-    const updatedData = [...companyContactData, newRow];
-    setCompanyContactData(updatedData);
+    // Use AG Grid's transaction API to add row without full re-render
+    if (gridRef.current?.api) {
+      const transaction = { add: [newRow] };
+      gridRef.current.api.applyTransaction(transaction);
 
-    // Start editing the new row after state update
-    setTimeout(() => {
-      gridRef.current?.api.startEditingCell({
-        rowIndex: updatedData.length - 1,
-        colKey: "fieldName",
-      });
-    }, 100);
-  }, [companyContactData]);
+      // Update React state
+      setCompanyContactData((prev) => [...prev, newRow]);
+
+      // Start editing the new row
+      setTimeout(() => {
+        if (gridRef.current?.api) {
+          const rowIndex = gridRef.current.api.getDisplayedRowCount() - 1;
+          gridRef.current.api.ensureIndexVisible(rowIndex);
+          gridRef.current.api.startEditingCell({
+            rowIndex,
+            colKey: "fieldName",
+          });
+        }
+      }, 50);
+    }
+  }, []);
 
   const handleDeleteSelected = useCallback(() => {
     if (selectedRows.length > 0 && onRemoveField) {

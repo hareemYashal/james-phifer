@@ -5,7 +5,11 @@ import type {
   SelectionChangedEvent,
   CellValueChangedEvent,
 } from "ag-grid-community";
-import { transformSampleData, type SampleDataRowData, type NonSampleFieldData } from "@/lib/sample-data-utils";
+import {
+  transformSampleData,
+  type SampleDataRowData,
+  type NonSampleFieldData,
+} from "@/lib/sample-data-utils";
 
 interface UseSampleDataGridProps {
   categorizedSections?: {
@@ -13,7 +17,9 @@ interface UseSampleDataGridProps {
   };
 }
 
-export const useSampleDataGrid = ({ categorizedSections }: UseSampleDataGridProps) => {
+export const useSampleDataGrid = ({
+  categorizedSections,
+}: UseSampleDataGridProps) => {
   const gridRef = useRef<AgGridReact>(null);
   const [sampleData, setSampleData] = useState<SampleDataRowData[]>([]);
   const [nonSampleData, setNonSampleData] = useState<NonSampleFieldData[]>([]);
@@ -40,19 +46,9 @@ export const useSampleDataGrid = ({ categorizedSections }: UseSampleDataGridProp
     setSelectedRows(event.api.getSelectedRows());
   }, []);
 
-  const onCellValueChanged = useCallback(
-    (event: CellValueChangedEvent) => {
-      console.log("Cell value changed:", event);
-      // Update the local state when cells are edited
-      const updatedData = sampleData.map((row) =>
-        row.id === event.data.id
-          ? { ...row, [event.colDef.field!]: event.newValue }
-          : row
-      );
-      setSampleData(updatedData);
-    },
-    [sampleData]
-  );
+  const onCellValueChanged = useCallback((event: CellValueChangedEvent) => {
+    console.log("Cell value changed:", event);
+  }, []);
 
   // Action handlers
   const handleExport = useCallback(() => {
@@ -69,18 +65,27 @@ export const useSampleDataGrid = ({ categorizedSections }: UseSampleDataGridProp
       method: "",
     };
 
-    // Update React state to persist the new row
-    const updatedData = [...sampleData, newRow];
-    setSampleData(updatedData);
+    // Use AG Grid's transaction API to add row without full re-render
+    if (gridRef.current?.api) {
+      const transaction = { add: [newRow] };
+      gridRef.current.api.applyTransaction(transaction);
 
-    // Start editing the new row after state update
-    setTimeout(() => {
-      gridRef.current?.api.startEditingCell({
-        rowIndex: updatedData.length - 1,
-        colKey: "customerSampleId",
-      });
-    }, 100);
-  }, [sampleData]);
+      // Update React state
+      setSampleData((prev) => [...prev, newRow]);
+
+      // Start editing the new row
+      setTimeout(() => {
+        if (gridRef.current?.api) {
+          const rowIndex = gridRef.current.api.getDisplayedRowCount() - 1;
+          gridRef.current.api.ensureIndexVisible(rowIndex);
+          gridRef.current.api.startEditingCell({
+            rowIndex,
+            colKey: "customerSampleId",
+          });
+        }
+      }, 50);
+    }
+  }, []);
 
   const handleDeleteSelected = useCallback(() => {
     if (selectedRows.length > 0) {
