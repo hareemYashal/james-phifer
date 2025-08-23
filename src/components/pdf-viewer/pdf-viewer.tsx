@@ -994,7 +994,7 @@ export default function FormParserInterface() {
                   </div>
                 </div>
               ) : extractedFields.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                <div className="flex flex-col items-center justify-center py-10">
                   <FileText
                     size={48}
                     style={{ color: "#9ca3af", marginBottom: "16px" }}
@@ -1481,27 +1481,9 @@ export default function FormParserInterface() {
                 </div>
               </div>
             ) : (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "60px 40px",
-                  backgroundColor: "white",
-                  borderRadius: "12px",
-                  border: "2px dashed #d1d5db",
-                }}
-              >
-                <Upload
-                  size={48}
-                  style={{ color: "#9ca3af", marginBottom: "16px" }}
-                />
-                <h3
-                  style={{
-                    fontSize: "18px",
-                    fontWeight: "600",
-                    color: "#374151",
-                    margin: "0 0 8px 0",
-                  }}
-                >
+              <div className="flex flex-col items-center justify-center">
+                <Upload className="mb-4 text-gray-400" size={48} />
+                <h3 className="text-lg font-semibold text-gray-800">
                   Upload a document to begin
                 </h3>
                 {/* <p
