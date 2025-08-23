@@ -8,6 +8,7 @@ import type {
   ColDef,
   GridReadyEvent,
   SelectionChangedEvent,
+  CellValueChangedEvent,
 } from "ag-grid-community";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -277,6 +278,10 @@ export function CompanyContactGrid({
     setSelectedRows(event.api.getSelectedRows());
   }, []);
 
+  const onCellValueChanged = useCallback((event: CellValueChangedEvent) => {
+    console.log("Cell value changed:", event);
+  }, []);
+
   // Action handlers
   const handleExport = () => {
     console.log("Exporting company contact data...", companyContactData);
@@ -344,13 +349,16 @@ export function CompanyContactGrid({
                 defaultColDef={defaultColDef}
                 onGridReady={onGridReady}
                 onSelectionChanged={onSelectionChanged}
+                onCellValueChanged={onCellValueChanged}
                 rowSelection="multiple"
-                suppressRowClickSelection={true}
+                pagination={true}
+                paginationPageSize={20}
+                paginationPageSizeSelector={[10, 20, 50, 100]}
                 quickFilterText={quickFilterText}
                 animateRows={true}
+                loading={false}
+                suppressHorizontalScroll={false}
                 context={{ onRemoveField }}
-                enterNavigatesVertically={true}
-                enterNavigatesVerticallyAfterEdit={true}
               />
             </div>
           </div>
