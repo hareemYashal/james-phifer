@@ -5,6 +5,7 @@ export interface SampleDataRowData {
   id: string;
   customerSampleId: string;
   matrix: string;
+  grab: string; // Added grab field
   compositeStartDate: string;
   compositeStartTime: string;
   method: string;
@@ -31,6 +32,18 @@ export const transformSampleData = (
   // Group items by sample number (1-10) and separate non-sample fields
   const groupedSamples: Record<string, any> = {};
   const nonSampleFields: NonSampleFieldData[] = [];
+
+  // Helper function to extract grab type from matrix value
+  const extractGrabFromMatrix = (matrixValue: string): { matrix: string; grab: string } => {
+    // Remove any spaces
+    const cleanValue = matrixValue.replace(/\s+/g, "");
+    
+    // First 2 chars are matrix, rest is grab
+    const matrix = cleanValue.length >= 2 ? cleanValue.substring(0, 2) : cleanValue;
+    const grab = cleanValue.length > 2 ? cleanValue.substring(2) : "";
+    
+    return { matrix, grab };
+  };
 
   collectedSampleDataInfo.forEach((item, index) => {
     const type = item.type;
@@ -153,10 +166,14 @@ export const transformSampleData = (
     // If no active analysis methods, check for fallback analysis_request
     if (activeAnalysisMethods.length === 0) {
       if (analysisRequest) {
+        const matrixValue = matrix?.value || "";
+        const { matrix: extractedMatrix, grab: extractedGrab } = extractGrabFromMatrix(matrixValue);
+        
         allSampleRows.push({
           id: `${sampleNum}-analysis-request-fallback`,
           customerSampleId: sampleId?.value || "",
-          matrix: matrix?.value || "",
+          matrix: extractedMatrix,
+          grab: extractedGrab,
           compositeStartDate: startDate?.value || "",
           compositeStartTime: startTime?.value || "",
           method: analysisRequest.value || "",
@@ -164,10 +181,14 @@ export const transformSampleData = (
           originalIndex: analysisRequest.originalIndex,
         });
       } else {
+        const matrixValue = matrix?.value || "";
+        const { matrix: extractedMatrix, grab: extractedGrab } = extractGrabFromMatrix(matrixValue);
+        
         allSampleRows.push({
           id: `${sampleNum}-default`,
           customerSampleId: sampleId?.value || "",
-          matrix: matrix?.value || "",
+          matrix: extractedMatrix,
+          grab: extractedGrab,
           compositeStartDate: startDate?.value || "",
           compositeStartTime: startTime?.value || "",
           method: "",
@@ -178,10 +199,14 @@ export const transformSampleData = (
     } else {
       // Create a row for each active analysis method
       activeAnalysisMethods.forEach((method, methodIndex) => {
+        const matrixValue = matrix?.value || "";
+        const { matrix: extractedMatrix, grab: extractedGrab } = extractGrabFromMatrix(matrixValue);
+        
         allSampleRows.push({
           id: `${sampleNum}-${method.analysisNum}-${methodIndex}`,
           customerSampleId: sampleId?.value || "",
-          matrix: matrix?.value || "",
+          matrix: extractedMatrix,
+          grab: extractedGrab,
           compositeStartDate: startDate?.value || "",
           compositeStartTime: startTime?.value || "",
           method: method.methodValue,
