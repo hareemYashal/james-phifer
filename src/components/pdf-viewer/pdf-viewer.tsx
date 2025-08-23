@@ -19,6 +19,7 @@ import {
   AlertCircle,
   Zap,
   Import,
+  Loader,
 } from "lucide-react";
 import Header from "@/shared/header";
 import {
@@ -35,9 +36,16 @@ import { dateRegex, qtyMatchRegex } from "@/lib/constant";
 import { ShowToast } from "@/shared/showToast";
 import EditableTable, { SpreadsheetView } from "../table";
 
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+
 import ConfirmationModal from "@/shared/DataConfirmationModal";
 import { CompanyContactGrid } from "../grid-tables/company-contact-grid/company-contact-grid";
 import { SampleDataGrid } from "../grid-tables/sample-data-grid/sample-data-grid";
+import { Button } from "../ui/button";
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
@@ -871,49 +879,7 @@ export default function FormParserInterface() {
                 borderBottom: "1px solid #e5e7eb",
                 backgroundColor: "#f8fafc",
               }}
-            >
-              {/* <div style={{ position: "relative" }}> */}
-              {/* <Search
-                  size={16}
-                  style={{
-                    position: "absolute",
-                    left: "12px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "#9ca3af",
-                  }}
-                /> */}
-              {/* <input
-                  type="text"
-                  placeholder="Search fields..."
-                  value={filterText}
-                  onChange={(e) => setFilterText(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px 8px 36px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
-                /> */}
-              {/* </div> */}
-
-              {/* <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  marginTop: "12px",
-                }}
-              >
-                <span style={{ fontSize: "12px", color: "#6b7280" }}>
-                  {filteredFields.length} total fields •{" "}
-                  {getCurrentPageFields.length} on page {pageNumber}
-                </span>
-              </div> */}
-            </div>
+            ></div>
 
             {/* Fields List */}
             <div
@@ -1131,68 +1097,20 @@ export default function FormParserInterface() {
               )}
             </div>
 
-            {/* Sticky Send Button - always visible at the bottom */}
-            <div
-              style={{
-                position: "sticky",
-                bottom: 0,
-                left: 0,
-                width: "90%",
-                background: "#fff",
-                padding: "16px",
-                // borderTop: "1px solid #e5e7eb",
-                zIndex: 2,
-              }}
+            <Button
+              onClick={handleSend}
+              disabled={extractedFields.length === 0 || sending}
+              className="w-full h-12  justify-center items-center bg-[#3b82f6] text-white"
             >
-              <button
-                onClick={handleSend}
-                style={{
-                  width: "100%",
-                  backgroundColor: "#3b82f6",
-                  color: "white",
-                  padding: "12px 0",
-                  borderRadius: "6px",
-                  border: "none",
-                  fontSize: "16px",
-                  fontWeight: "600",
-                  cursor: sending ? "not-allowed" : "pointer",
-                  boxShadow: "0 2px 4px rgba(59, 130, 246, 0.10)",
-                  transition: "background 0.2s",
-                  opacity: extractedFields.length > 0 ? 1 : 0.5,
-                  pointerEvents:
-                    extractedFields.length > 0 && !sending ? "auto" : "none",
-                  position: "relative",
-                }}
-                disabled={extractedFields.length === 0 || sending}
-              >
-                {sending ? (
-                  <span
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <span
-                      className="spinner"
-                      style={{
-                        width: 18,
-                        height: 18,
-                        border: "3px solid #fff",
-                        borderTop: "3px solid #3b82f6",
-                        borderRadius: "50%",
-                        display: "inline-block",
-                        animation: "spin 1s linear infinite",
-                      }}
-                    />
-                    Sending...
-                  </span>
-                ) : (
-                  "Send"
-                )}
-              </button>
-            </div>
+              {sending ? (
+                <span className="flex items-center gap-2">
+                  <Loader className="mr-2 h-4 w-4 animate-spin text-white " />
+                  Sending...
+                </span>
+              ) : (
+                "Send"
+              )}
+            </Button>
           </div>
         )}
 
@@ -1624,6 +1542,23 @@ export default function FormParserInterface() {
           </div>
         </div>
       </div>
+
+      <ResizablePanelGroup
+        direction="horizontal"
+        className="min-h-[200px] max-w-full rounded-lg border md:min-w-[450px]"
+      >
+        <ResizablePanel defaultSize={50} maxSize={60}>
+          <div className="flex h-full items-center justify-center p-6">
+            <span className="font-semibold">Sidebar</span>
+          </div>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={50} maxSize={60}>
+          <div className="flex h-full items-center justify-center p-6">
+            <span className="font-semibold">Content</span>
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       <ConfirmationModal
         isOpen={showConfirmationModal}
