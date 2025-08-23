@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
 import { themeQuartz } from "ag-grid-community";
@@ -251,6 +251,7 @@ export function SampleDataGrid({
   onFieldChange,
   onRemoveField,
 }: SampleDataGridProps) {
+  const gridRef = useRef<AgGridReact>(null);
   const [sampleData, setSampleData] = useState<SampleDataRowData[]>([]);
   const [nonSampleData, setNonSampleData] = useState<NonSampleFieldData[]>([]);
   const [selectedRows, setSelectedRows] = useState<SampleDataRowData[]>([]);
@@ -502,6 +503,7 @@ export function SampleDataGrid({
                     </label>
                     <input
                       type="text"
+                      aria-label={field.fieldName}
                       value={field.value}
                       onChange={(e) =>
                         onFieldChange?.(
@@ -548,6 +550,7 @@ export function SampleDataGrid({
               className="ag-theme-alpine"
             >
               <AgGridReact
+                ref={gridRef}
                 theme={themeQuartz}
                 rowData={sampleData}
                 columnDefs={columnDefs}
