@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* AG Grid CSS imports */
+@import "ag-grid-community/styles/ag-grid.css";
+@import "ag-grid-community/styles/ag-theme-quartz.css";
+
 @layer base {
   :root {
     --background: 0 0% 100%;

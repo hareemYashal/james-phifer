@@ -3,8 +3,6 @@
 import { useMemo } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
-import "ag-grid-community/styles/ag-grid.css";
-import "ag-grid-community/styles/ag-theme-quartz.css";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -90,6 +88,7 @@ export function CompanyContactGrid({
             >
               <AgGridReact
                 ref={gridRef}
+                theme="legacy"
                 rowData={companyContactData}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}

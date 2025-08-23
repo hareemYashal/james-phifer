@@ -3,8 +3,6 @@
 import { useMemo } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
-import "ag-grid-community/styles/ag-grid.css";
-import "ag-grid-community/styles/ag-theme-quartz.css";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import styles from "./SampleDataGrid.module.css";
@@ -85,6 +83,7 @@ export function SampleDataGrid({
             >
               <AgGridReact
                 ref={gridRef}
+                theme="legacy"
                 rowData={sampleData}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
