@@ -13,6 +13,8 @@
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@supabase/supabase-js": "^2.50.3",
+    "ag-grid-community": "^34.1.2",
+    "ag-grid-react": "^34.1.2",
     "canvas": "^3.1.2",
     "class-variance-authority": "^0.7.1",
     "lucide-react": "^0.525.0",

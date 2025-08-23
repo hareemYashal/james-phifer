@@ -16,6 +16,8 @@ function DocumentsViewer({
     null
   );
 
+  console.log(documents);
+
   const toggleSidebar = () => {
     setIsSidebarOpen((prev) => !prev);
   };

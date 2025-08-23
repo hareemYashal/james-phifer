@@ -2,6 +2,8 @@ import type React from "react";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-quartz.css";
 import { Toaster } from "sonner";
 import AuthCheck from "@/lib/auth";
 import { RoleProvider } from "@/context/user-context";

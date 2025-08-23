@@ -34,7 +34,10 @@ import { BoundingBox, DetectedRegion, ExtractedField } from "@/lib/types";
 import { dateRegex, qtyMatchRegex } from "@/lib/constant";
 import { ShowToast } from "@/shared/showToast";
 import EditableTable, { SpreadsheetView } from "../table";
+
 import ConfirmationModal from "@/shared/DataConfirmationModal";
+import { CompanyContactGrid } from "../company-contact-grid";
+import { SampleDataGrid } from "../sample-data-grid";
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
@@ -111,9 +114,12 @@ function parseAPIResponse(apiData: any): {
 
     // Extract key-value pairs from the entities (primary source)
     if (apiData.entities && Array.isArray(apiData.entities)) {
+      // Log all entities for debugging
+      console.log("🔍 All Extracted Entities:", apiData.entities);
+
       // Categorize entities into sections for spreadsheet view
       sections = categorizeEntitiesIntoSections(apiData.entities);
-      // console.log("ALL DATA IN SECTIONS", sections);
+      console.log("📋 Categorized Sections:", sections);
 
       apiData.entities.forEach((entity: any, index: number) => {
         if (entity.type && entity.value) {
@@ -154,7 +160,6 @@ function parseAPIResponse(apiData: any): {
         });
       }
     }
-
 
     // If we have very few fields, try to extract more from structured patterns
     if (fields.length < 5 && apiData.text) {
@@ -280,6 +285,7 @@ export default function FormParserInterface() {
   const [rotate, setRotate] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<"keyvalue">("keyvalue");
   const [filterText, setFilterText] = useState<string>("");
+  const [useAgGrid, setUseAgGrid] = useState<boolean>(true);
 
   // Processing states
   const [loading, setLoading] = useState(false);
@@ -302,7 +308,7 @@ export default function FormParserInterface() {
     contactProjectInfo: [],
     dataDeliverables: [],
     containerInfo: [],
-    collectedSampleDataInfo: []
+    collectedSampleDataInfo: [],
   });
   const [processingTime, setProcessingTime] = useState<number | null>(null);
   const [apiResponse, setApiResponse] = useState<any>(null);
@@ -392,13 +398,13 @@ export default function FormParserInterface() {
 
     const handleUp = () => {
       setIsResizing(false);
-      document.removeEventListener('mousemove', handleMove);
-      document.removeEventListener('mouseup', handleUp);
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", handleUp);
     };
 
     // Add global event listeners
-    document.addEventListener('mousemove', handleMove);
-    document.addEventListener('mouseup', handleUp);
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseup", handleUp);
   };
 
   const handleResizerMouseMove = (e: MouseEvent) => {
@@ -417,8 +423,8 @@ export default function FormParserInterface() {
 
   const handleResizerMouseUp = () => {
     setIsResizing(false);
-    document.removeEventListener('mousemove', handleResizerMouseMove);
-    document.removeEventListener('mouseup', handleResizerMouseUp);
+    document.removeEventListener("mousemove", handleResizerMouseMove);
+    document.removeEventListener("mouseup", handleResizerMouseUp);
   };
 
   // Touch handlers for mobile support
@@ -430,8 +436,10 @@ export default function FormParserInterface() {
     setResizeStartWidth(leftPanelWidth);
 
     // Add global touch event listeners
-    document.addEventListener('touchmove', handleResizerTouchMove, { passive: false });
-    document.addEventListener('touchend', handleResizerTouchEnd);
+    document.addEventListener("touchmove", handleResizerTouchMove, {
+      passive: false,
+    });
+    document.addEventListener("touchend", handleResizerTouchEnd);
   };
 
   const handleResizerTouchMove = (e: TouchEvent) => {
@@ -452,33 +460,33 @@ export default function FormParserInterface() {
 
   const handleResizerTouchEnd = () => {
     setIsResizing(false);
-    document.removeEventListener('touchmove', handleResizerTouchMove);
-    document.removeEventListener('touchend', handleResizerTouchEnd);
+    document.removeEventListener("touchmove", handleResizerTouchMove);
+    document.removeEventListener("touchend", handleResizerTouchEnd);
   };
 
   // Clean up event listeners on component unmount
   useEffect(() => {
     return () => {
-      document.removeEventListener('mousemove', handleResizerMouseMove);
-      document.removeEventListener('mouseup', handleResizerMouseUp);
-      document.removeEventListener('touchmove', handleResizerTouchMove);
-      document.removeEventListener('touchend', handleResizerTouchEnd);
+      document.removeEventListener("mousemove", handleResizerMouseMove);
+      document.removeEventListener("mouseup", handleResizerMouseUp);
+      document.removeEventListener("touchmove", handleResizerTouchMove);
+      document.removeEventListener("touchend", handleResizerTouchEnd);
     };
   }, []);
 
   // Add global style for body when resizing to prevent text selection
   useEffect(() => {
     if (isResizing) {
-      document.body.style.userSelect = 'none';
-      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = "none";
+      document.body.style.cursor = "col-resize";
     } else {
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
     }
 
     return () => {
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
     };
   }, [isResizing]);
 
@@ -489,7 +497,7 @@ export default function FormParserInterface() {
     const selectedFile = e.target.files?.[0];
 
     // Reset the input value immediately to allow selecting the same file again
-    e.target.value = '';
+    e.target.value = "";
 
     if (!selectedFile) return;
 
@@ -515,7 +523,7 @@ export default function FormParserInterface() {
       contactProjectInfo: [],
       dataDeliverables: [],
       containerInfo: [],
-      collectedSampleDataInfo: []
+      collectedSampleDataInfo: [],
     });
     setProcessingTime(null);
     setApiResponse(null);
@@ -536,6 +544,16 @@ export default function FormParserInterface() {
       if (result.success !== false && (result.text || result.pages)) {
         // Store raw API response for debugging
         setApiResponse(result);
+
+        // Log the complete document upload result
+        console.log("📄 Document Upload Result:", result);
+        console.log("📊 API Response Structure:", {
+          hasText: !!result.text,
+          hasPages: !!result.pages,
+          hasEntities: !!result.entities,
+          entitiesCount: result.entities?.length || 0,
+          pagesCount: result.pages?.length || 0,
+        });
 
         // Parse the response to extract regions and fields
         const { regions, fields, sections } = parseAPIResponse(result);
@@ -594,23 +612,30 @@ export default function FormParserInterface() {
   };
 
   // Handlers for spreadsheet view sections
-  const handleSectionFieldChange = (sectionType: string, index: number, value: string) => {
-    setCategorizedSections(prev => ({
+  const handleSectionFieldChange = (
+    sectionType: string,
+    index: number,
+    value: string
+  ) => {
+    setCategorizedSections((prev) => ({
       ...prev,
       [sectionType]: prev[sectionType as keyof typeof prev].map((item, idx) =>
         idx === index ? { ...item, value } : item
-      )
+      ),
     }));
 
     // Also update the extractedFields for consistency
-    const sectionItems = categorizedSections[sectionType as keyof typeof categorizedSections];
+    const sectionItems =
+      categorizedSections[sectionType as keyof typeof categorizedSections];
     const item = sectionItems[index];
     if (item) {
-      const fieldIndex = extractedFields.findIndex(field =>
-        field.regionId.includes('entity') && field.displayName === formatEntityTypeToDisplayName(item.type)
+      const fieldIndex = extractedFields.findIndex(
+        (field) =>
+          field.regionId.includes("entity") &&
+          field.displayName === formatEntityTypeToDisplayName(item.type)
       );
       if (fieldIndex !== -1) {
-        setExtractedFields(prev =>
+        setExtractedFields((prev) =>
           prev.map((field, idx) =>
             idx === fieldIndex ? { ...field, value } : field
           )
@@ -620,7 +645,8 @@ export default function FormParserInterface() {
   };
 
   const handleSectionRemoveField = (sectionType: string, index: number) => {
-    const sectionData = categorizedSections[sectionType as keyof typeof categorizedSections];
+    const sectionData =
+      categorizedSections[sectionType as keyof typeof categorizedSections];
 
     // Handle out-of-bounds index gracefully (can happen when removing multiple items)
     if (!sectionData || index >= sectionData.length || index < 0) {
@@ -629,16 +655,23 @@ export default function FormParserInterface() {
 
     const itemToRemove = sectionData[index];
 
-    setCategorizedSections(prev => ({
+    setCategorizedSections((prev) => ({
       ...prev,
-      [sectionType]: prev[sectionType as keyof typeof prev].filter((_, idx) => idx !== index)
+      [sectionType]: prev[sectionType as keyof typeof prev].filter(
+        (_, idx) => idx !== index
+      ),
     }));
 
     // Also remove from extractedFields
     if (itemToRemove) {
-      setExtractedFields(prev =>
-        prev.filter(field =>
-          !(field.regionId.includes('entity') && field.displayName === formatEntityTypeToDisplayName(itemToRemove.type))
+      setExtractedFields((prev) =>
+        prev.filter(
+          (field) =>
+            !(
+              field.regionId.includes("entity") &&
+              field.displayName ===
+                formatEntityTypeToDisplayName(itemToRemove.type)
+            )
         )
       );
     }
@@ -646,10 +679,14 @@ export default function FormParserInterface() {
 
   // Export handler
   const handleExport = () => {
-    if (categorizedSections.companyLocationInfo.length > 0 || categorizedSections.contactProjectInfo.length > 0 ||
-      categorizedSections.dataDeliverables.length > 0 || categorizedSections.containerInfo.length > 0 ||
-      categorizedSections.collectedSampleDataInfo.length > 0) {
-      exportToExcel(categorizedSections, 'extracted_document_data');
+    if (
+      categorizedSections.companyLocationInfo.length > 0 ||
+      categorizedSections.contactProjectInfo.length > 0 ||
+      categorizedSections.dataDeliverables.length > 0 ||
+      categorizedSections.containerInfo.length > 0 ||
+      categorizedSections.collectedSampleDataInfo.length > 0
+    ) {
+      exportToExcel(categorizedSections, "extracted_document_data");
       ShowToast("Data exported to CSV successfully!", "success");
     } else {
       ShowToast("No data available to export", "error");
@@ -773,6 +810,60 @@ export default function FormParserInterface() {
               ))}
             </div>
 
+            {/* View Toggle */}
+            <div
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#f1f5f9",
+                borderBottom: "1px solid #e5e7eb",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "12px",
+                  color: "#6b7280",
+                  fontWeight: "500",
+                }}
+              >
+                View:
+              </span>
+              <button
+                onClick={() => setUseAgGrid(true)}
+                style={{
+                  padding: "4px 8px",
+                  fontSize: "11px",
+                  fontWeight: "500",
+                  color: useAgGrid ? "#3b82f6" : "#6b7280",
+                  backgroundColor: useAgGrid ? "#dbeafe" : "transparent",
+                  border: "1px solid",
+                  borderColor: useAgGrid ? "#3b82f6" : "#d1d5db",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                AG Grid
+              </button>
+              <button
+                onClick={() => setUseAgGrid(false)}
+                style={{
+                  padding: "4px 8px",
+                  fontSize: "11px",
+                  fontWeight: "500",
+                  color: !useAgGrid ? "#3b82f6" : "#6b7280",
+                  backgroundColor: !useAgGrid ? "#dbeafe" : "transparent",
+                  border: "1px solid",
+                  borderColor: !useAgGrid ? "#3b82f6" : "#d1d5db",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                Table View
+              </button>
+            </div>
+
             {/* Filter and Controls */}
             <div
               style={{
@@ -830,6 +921,8 @@ export default function FormParserInterface() {
                 padding: "16px",
                 minHeight: 0,
                 paddingBottom: 64,
+                overflowY: "auto",
+                maxHeight: "calc(100vh - 200px)",
               }}
             >
               {loading ? (
@@ -915,7 +1008,7 @@ export default function FormParserInterface() {
                           contactProjectInfo: [],
                           dataDeliverables: [],
                           containerInfo: [],
-                          collectedSampleDataInfo: []
+                          collectedSampleDataInfo: [],
                         });
                         setProcessingStep("upload");
                       }}
@@ -964,23 +1057,77 @@ export default function FormParserInterface() {
                       : `${detectedRegions.length} regions detected, but no key-value pairs extracted`}
                   </p>
                 </div>
-              ) : (
-                // Use SpreadsheetView if we have categorized sections, otherwise use EditableTable
-                (categorizedSections.companyLocationInfo.length > 0 || categorizedSections.contactProjectInfo.length > 0 ||
-                  categorizedSections.dataDeliverables.length > 0 || categorizedSections.containerInfo.length > 0 ||
-                  categorizedSections.collectedSampleDataInfo.length > 0) ? (
-                  <SpreadsheetView
-                    sections={categorizedSections}
-                    onFieldChange={handleSectionFieldChange}
-                    onRemoveField={handleSectionRemoveField}
-                  />
+              ) : // Use AG Grid tables if enabled, otherwise use the original table view
+              useAgGrid ? (
+                categorizedSections.companyLocationInfo.length > 0 ||
+                categorizedSections.contactProjectInfo.length > 0 ||
+                categorizedSections.dataDeliverables.length > 0 ||
+                categorizedSections.containerInfo.length > 0 ||
+                categorizedSections.collectedSampleDataInfo.length > 0 ? (
+                  <div className="space-y-6">
+                    <CompanyContactGrid
+                      categorizedSections={{
+                        companyLocationInfo:
+                          categorizedSections.companyLocationInfo,
+                        contactProjectInfo:
+                          categorizedSections.contactProjectInfo,
+                      }}
+                      onFieldChange={handleSectionFieldChange}
+                      onRemoveField={handleSectionRemoveField}
+                    />
+                    <SampleDataGrid
+                      categorizedSections={{
+                        collectedSampleDataInfo:
+                          categorizedSections.collectedSampleDataInfo,
+                      }}
+                      onFieldChange={handleSectionFieldChange}
+                      onRemoveField={handleSectionRemoveField}
+                    />
+                  </div>
                 ) : (
-                  <EditableTable
-                    fields={filteredFields}
-                    onFieldChange={handleFieldChange}
-                    onRemoveField={removeField}
-                  />
+                  <div style={{ textAlign: "center", padding: "40px 0" }}>
+                    <FileText
+                      size={48}
+                      style={{ color: "#9ca3af", marginBottom: "16px" }}
+                    />
+                    <h3
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: "#374151",
+                        margin: "0 0 8px 0",
+                      }}
+                    >
+                      No categorized data available
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#6b7280",
+                        margin: "0",
+                      }}
+                    >
+                      Switch to Table View to see extracted fields
+                    </p>
+                  </div>
                 )
+              ) : // Use SpreadsheetView if we have categorized sections, otherwise use EditableTable
+              categorizedSections.companyLocationInfo.length > 0 ||
+                categorizedSections.contactProjectInfo.length > 0 ||
+                categorizedSections.dataDeliverables.length > 0 ||
+                categorizedSections.containerInfo.length > 0 ||
+                categorizedSections.collectedSampleDataInfo.length > 0 ? (
+                <SpreadsheetView
+                  sections={categorizedSections}
+                  onFieldChange={handleSectionFieldChange}
+                  onRemoveField={handleSectionRemoveField}
+                />
+              ) : (
+                <EditableTable
+                  fields={filteredFields}
+                  onFieldChange={handleFieldChange}
+                  onRemoveField={removeField}
+                />
               )}
             </div>
 
@@ -1062,7 +1209,9 @@ export default function FormParserInterface() {
               alignItems: "center",
               justifyContent: "center",
               transition: isResizing ? "none" : "background-color 0.2s ease",
-              boxShadow: isResizing ? "0 0 8px rgba(59, 130, 246, 0.4)" : "none",
+              boxShadow: isResizing
+                ? "0 0 8px rgba(59, 130, 246, 0.4)"
+                : "none",
               borderLeft: "1px solid #e5e7eb",
               borderRight: "1px solid #e5e7eb",
               userSelect: "none",
@@ -1071,10 +1220,14 @@ export default function FormParserInterface() {
             onMouseDown={handleResizerMouseDown}
             onTouchStart={handleResizerTouchStart}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = isResizing ? "#3b82f6" : "#3b82f6";
+              e.currentTarget.style.backgroundColor = isResizing
+                ? "#3b82f6"
+                : "#3b82f6";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = isResizing ? "#3b82f6" : "#d1d5db";
+              e.currentTarget.style.backgroundColor = isResizing
+                ? "#3b82f6"
+                : "#d1d5db";
             }}
           >
             {/* Visual indicator dots */}
@@ -1272,9 +1425,11 @@ export default function FormParserInterface() {
                 >
                   <button
                     onClick={() => {
-                      const fileInput = document.getElementById("file-input") as HTMLInputElement;
+                      const fileInput = document.getElementById(
+                        "file-input"
+                      ) as HTMLInputElement;
                       if (fileInput) {
-                        fileInput.value = '';
+                        fileInput.value = "";
                         fileInput.click();
                       }
                     }}
@@ -1443,9 +1598,11 @@ export default function FormParserInterface() {
                 </p> */}
                 <button
                   onClick={() => {
-                    const fileInput = document.getElementById("file-input") as HTMLInputElement;
+                    const fileInput = document.getElementById(
+                      "file-input"
+                    ) as HTMLInputElement;
                     if (fileInput) {
-                      fileInput.value = '';
+                      fileInput.value = "";
                       fileInput.click();
                     }
                   }}
@@ -1497,6 +1654,6 @@ export default function FormParserInterface() {
           }
         }
       `}</style>
-    </div >
+    </div>
   );
 }
