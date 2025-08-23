@@ -1,7 +1,7 @@
-import React from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
 import type { NonSampleFieldData } from "@/lib/sample-data-utils";
+import { Trash2 } from "lucide-react";
+import React from "react";
 
 const ConfidenceBar: React.FC<{ confidence: number }> = ({ confidence }) => (
   <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -28,14 +28,14 @@ export const NonSampleFields: React.FC<NonSampleFieldsProps> = ({
   }
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 p-8 rounded-2xl border border-blue-200 shadow-lg">
+    <div className="bg-gradient-to-r my-4  from-blue-50 via-indigo-50 to-purple-50 p-8 rounded-2xl border border-blue-200 shadow-lg">
       <div className="flex items-center gap-4 mb-6">
         <div className="h-8 w-2 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full shadow-sm"></div>
         <h4 className="text-lg font-bold text-gray-800 tracking-wide">
           General Information
         </h4>
       </div>
-      <div className="space-y-4">
+      <div className="flex flex-wrap  gap-4">
         {nonSampleData.map((field) => (
           <div
             key={field.id}
@@ -71,22 +71,6 @@ export const NonSampleFields: React.FC<NonSampleFieldsProps> = ({
               className="w-full text-sm border-2 border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
               placeholder={`Enter ${field.fieldName.toLowerCase()}...`}
             />
-            {field.confidence && (
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-xs text-gray-500">Confidence:</span>
-                <div className="flex items-center gap-1">
-                  <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-300"
-                      data-confidence={field.confidence}
-                    ></div>
-                  </div>
-                  <span className="text-xs text-gray-600 font-medium">
-                    {Math.round(field.confidence * 100)}%
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         ))}
       </div>

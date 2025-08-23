@@ -111,7 +111,7 @@ export function CompanyContactGrid({
               />
             </div>
             {/* Add Row Button at Bottom */}
-            <div className="flex justify-center pt-4 border-t">
+            <div className="flex justify-center py-4 border-t">
               <Button onClick={handleAddRow} size="sm" variant="default">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Row

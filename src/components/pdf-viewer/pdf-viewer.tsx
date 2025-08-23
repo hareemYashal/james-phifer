@@ -762,19 +762,13 @@ export default function FormParserInterface() {
 
   return (
     <div
+      className="min-h-screen"
       style={{
-        height: "85vh",
         backgroundColor: "#f8fafc",
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          height: "calc(90vh - 60px)",
-        }}
-      >
+      <div className="flex h-screen">
         {/* Left Panel - Form Fields */}
         {!isPanelCollapsed && (
           <div
@@ -819,7 +813,7 @@ export default function FormParserInterface() {
             </div>
 
             {/* View Toggle */}
-            <div
+            {/* <div
               style={{
                 padding: "8px 16px",
                 backgroundColor: "#f1f5f9",
@@ -870,7 +864,7 @@ export default function FormParserInterface() {
               >
                 Table View
               </button>
-            </div>
+            </div> */}
 
             {/* Filter and Controls */}
             <div
@@ -1525,7 +1519,7 @@ export default function FormParserInterface() {
         </div>
       </div>
 
-      <ResizablePanelGroup
+      {/* <ResizablePanelGroup
         direction="horizontal"
         className="min-h-[200px] max-w-full rounded-lg border md:min-w-[450px]"
       >
@@ -1540,7 +1534,7 @@ export default function FormParserInterface() {
             <span className="font-semibold">Content</span>
           </div>
         </ResizablePanel>
-      </ResizablePanelGroup>
+      </ResizablePanelGroup> */}
 
       <ConfirmationModal
         isOpen={showConfirmationModal}

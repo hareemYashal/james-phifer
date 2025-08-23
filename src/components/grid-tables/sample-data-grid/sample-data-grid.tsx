@@ -14,6 +14,7 @@ import { SampleDataGridHeader } from "./SampleDataGridHeader";
 import { NonSampleFields } from "./NonSampleFields";
 import { getColumnDefs, defaultColDef } from "./grid-config";
 import { useSampleDataGrid } from "@/hooks/useSampleDataGrid";
+import { Input } from "@/components/ui/input";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -64,6 +65,22 @@ export function SampleDataGrid({
             onRemoveField={onRemoveField}
           />
 
+          {/* Quick Filter */}
+          <div className="flex items-center gap-4">
+            <Input
+              placeholder="Quick filter..."
+              value={quickFilterText}
+              onChange={(e) => setQuickFilterText(e.target.value)}
+              className="max-w-sm"
+            />
+            {selectedRows.length > 0 && (
+              <Badge variant="secondary">
+                {selectedRows.length} row{selectedRows.length !== 1 ? "s" : ""}{" "}
+                selected
+              </Badge>
+            )}
+          </div>
+
           {selectedRows.length > 0 && (
             <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></div>
@@ -105,7 +122,7 @@ export function SampleDataGrid({
               />
             </div>
             {/* Add Row Button at Bottom */}
-            <div className="flex justify-center pt-4 border-t">
+            <div className="flex justify-center py-4 border-t">
               <Button onClick={handleAddRow} size="sm" variant="default">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Row

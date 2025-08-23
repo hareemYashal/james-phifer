@@ -10,26 +10,20 @@ interface CompanyContactGridHeaderProps {
   onDeleteSelected: () => void;
 }
 
-export const CompanyContactGridHeader: React.FC<CompanyContactGridHeaderProps> = ({
-  selectedRows,
-  onExport,
-  onDeleteSelected,
-}) => {
+export const CompanyContactGridHeader: React.FC<
+  CompanyContactGridHeaderProps
+> = ({ selectedRows, onExport, onDeleteSelected }) => {
   return (
     <CardHeader>
       <CardTitle className="flex items-center justify-between">
         <span>Company & Location + Contact & Project Information</span>
         <div className="flex gap-2">
-          <Button onClick={onExport} size="sm" variant="outline">
+          {/* <Button onClick={onExport} size="sm" variant="outline">
             <Download className="h-4 w-4" />
             Export
-          </Button>
+          </Button> */}
           {selectedRows.length > 0 && (
-            <Button
-              onClick={onDeleteSelected}
-              size="sm"
-              variant="destructive"
-            >
+            <Button onClick={onDeleteSelected} size="sm" variant="destructive">
               <Trash2 className="h-4 w-4" />
               Delete ({selectedRows.length})
             </Button>
