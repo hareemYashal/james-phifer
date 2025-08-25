@@ -14,7 +14,9 @@ export interface CompanyContactRowData {
 // Helper function to transform data
 export const transformCompanyContactData = (
   companyLocationInfo: any[],
-  contactProjectInfo: any[]
+  contactProjectInfo: any[],
+  dataDeliverables: any[],
+  containerInfo: any[]
 ): CompanyContactRowData[] => {
   const combinedData: CompanyContactRowData[] = [];
 
@@ -40,6 +42,32 @@ export const transformCompanyContactData = (
       confidence: item.confidence || 0.9,
       section: "Contact & Project Information",
       sectionType: "contactProjectInfo",
+      originalIndex: index,
+    });
+  });
+
+  // Add data deliverables
+  dataDeliverables.forEach((item, index) => {
+    combinedData.push({
+      id: `deliverable_${index}`,
+      fieldName: formatEntityTypeToDisplayName(item.type),
+      value: item.value || "",
+      confidence: item.confidence || 0.9,
+      section: "Data Deliverables",
+      sectionType: "dataDeliverables",
+      originalIndex: index,
+    });
+  });
+
+  // Add container info
+  containerInfo.forEach((item, index) => {
+    combinedData.push({
+      id: `container_${index}`,
+      fieldName: formatEntityTypeToDisplayName(item.type),
+      value: item.value || "",
+      confidence: item.confidence || 0.9,
+      section: "Container Information",
+      sectionType: "containerInfo",
       originalIndex: index,
     });
   });

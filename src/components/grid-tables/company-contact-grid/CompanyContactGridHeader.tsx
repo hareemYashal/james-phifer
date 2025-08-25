@@ -16,7 +16,7 @@ export const CompanyContactGridHeader: React.FC<
   return (
     <CardHeader>
       <CardTitle className="flex items-center justify-between">
-        <span>Company & Location + Contact & Project Information</span>
+        <span>Company & Contact Details with Data Deliverables and Container Information</span>
         <div className="flex gap-2">
           {/* <Button onClick={onExport} size="sm" variant="outline">
             <Download className="h-4 w-4" />

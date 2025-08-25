@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, forwardRef, useImperativeHandle } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
 import { Input } from "@/components/ui/input";
@@ -21,19 +21,28 @@ interface CompanyContactGridProps {
   categorizedSections?: {
     companyLocationInfo: any[];
     contactProjectInfo: any[];
+    dataDeliverables: any[];
+    containerInfo: any[];
   };
   onFieldChange?: (sectionType: string, index: number, value: string) => void;
   onRemoveField?: (sectionType: string, index: number) => void;
+  onExportData?: (data: any[]) => void;
 }
 
-export function CompanyContactGrid({
+export const CompanyContactGrid = forwardRef<
+  { handleExportData: () => void; getCurrentData: () => any[] },
+  CompanyContactGridProps
+>(function CompanyContactGrid({
   categorizedSections = {
     companyLocationInfo: [],
     contactProjectInfo: [],
+    dataDeliverables: [],
+    containerInfo: [],
   },
   onFieldChange,
   onRemoveField,
-}: CompanyContactGridProps) {
+  onExportData,
+}, ref) {
   const {
     gridRef,
     companyContactData,
@@ -46,16 +55,25 @@ export function CompanyContactGrid({
     handleExport,
     handleAddRow,
     handleDeleteSelected,
+    handleExportData,
+    getCurrentData,
   } = useCompanyContactGrid({
     categorizedSections,
     onFieldChange,
     onRemoveField,
+    onExportData,
   });
 
   const columnDefs = useMemo(
     () => getCompanyContactColumnDefs(onFieldChange),
     [onFieldChange]
   );
+
+  // Expose functions to parent via ref
+  useImperativeHandle(ref, () => ({
+    handleExportData,
+    getCurrentData,
+  }), [handleExportData, getCurrentData]);
 
   return (
     <Card>
@@ -122,4 +140,4 @@ export function CompanyContactGrid({
       </CardContent>
     </Card>
   );
-}
+});
