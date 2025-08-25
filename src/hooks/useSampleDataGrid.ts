@@ -15,10 +15,12 @@ interface UseSampleDataGridProps {
   categorizedSections?: {
     collectedSampleDataInfo: any[];
   };
+  onExportData?: (sampleData: any[], nonSampleData: any[]) => void;
 }
 
 export const useSampleDataGrid = ({
   categorizedSections,
+  onExportData,
 }: UseSampleDataGridProps) => {
   const gridRef = useRef<AgGridReact>(null);
   const [sampleData, setSampleData] = useState<SampleDataRowData[]>([]);
@@ -36,6 +38,36 @@ export const useSampleDataGrid = ({
       setSampleData(sampleRows);
     }
   }, [categorizedSections]);
+
+  // Export function to get current data directly from grid
+  const handleExportData = useCallback(() => {
+    if (gridRef.current?.api) {
+      // Get ALL rows from grid (including newly added ones)
+      const allSampleRows: any[] = [];
+      gridRef.current.api.forEachNode((node) => {
+        allSampleRows.push(node.data);
+      });
+
+      // Call the callback AND return the data
+      if (onExportData) {
+        onExportData(allSampleRows, nonSampleData);
+      }
+      return { sampleData: allSampleRows, nonSampleData };
+    }
+    return { sampleData: [], nonSampleData: [] };
+  }, [onExportData, nonSampleData]);
+
+  // Function to get current data synchronously
+  const getCurrentData = useCallback(() => {
+    if (gridRef.current?.api) {
+      const allSampleRows: any[] = [];
+      gridRef.current.api.forEachNode((node) => {
+        allSampleRows.push(node.data);
+      });
+      return { sampleData: allSampleRows, nonSampleData };
+    }
+    return { sampleData, nonSampleData }; // Fallback to state
+  }, [sampleData, nonSampleData]);
 
   // Grid event handlers
   const onGridReady = useCallback((params: GridReadyEvent) => {
@@ -112,5 +144,7 @@ export const useSampleDataGrid = ({
     handleExport,
     handleAddRow,
     handleDeleteSelected,
+    handleExportData,
+    getCurrentData,
   };
 };

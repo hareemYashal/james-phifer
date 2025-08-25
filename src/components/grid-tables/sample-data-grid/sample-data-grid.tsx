@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, forwardRef, useImperativeHandle } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
 import { Badge } from "@/components/ui/badge";
@@ -24,15 +24,20 @@ interface SampleDataGridProps {
   };
   onFieldChange?: (sectionType: string, index: number, value: string) => void;
   onRemoveField?: (sectionType: string, index: number) => void;
+  onExportData?: (sampleData: any[], nonSampleData: any[]) => void;
 }
 
-export function SampleDataGrid({
+export const SampleDataGrid = forwardRef<
+  { handleExportData: () => void; getCurrentData: () => { sampleData: any[]; nonSampleData: any[] } },
+  SampleDataGridProps
+>(function SampleDataGrid({
   categorizedSections = {
     collectedSampleDataInfo: [],
   },
   onFieldChange,
   onRemoveField,
-}: SampleDataGridProps) {
+  onExportData,
+}, ref) {
   const {
     gridRef,
     sampleData,
@@ -46,9 +51,17 @@ export function SampleDataGrid({
     handleExport,
     handleAddRow,
     handleDeleteSelected,
-  } = useSampleDataGrid({ categorizedSections });
+    handleExportData,
+    getCurrentData,
+  } = useSampleDataGrid({ categorizedSections, onExportData });
 
   const columnDefs = useMemo(() => getColumnDefs(), []);
+
+  // Expose functions to parent via ref
+  useImperativeHandle(ref, () => ({
+    handleExportData,
+    getCurrentData,
+  }), [handleExportData, getCurrentData]);
 
   return (
     <Card className="w-full shadow-lg border-0 bg-white">
@@ -133,4 +146,4 @@ export function SampleDataGrid({
       </CardContent>
     </Card>
   );
-}
+});

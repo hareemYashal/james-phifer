@@ -25,7 +25,7 @@ export const getCompanyContactColumnDefs = (onFieldChange?: (sectionType: string
       if (params.data.originalIndex === -1) {
         return;
       }
-      
+
       if (
         onFieldChange &&
         params.data.sectionType &&
@@ -48,7 +48,7 @@ export const getCompanyContactColumnDefs = (onFieldChange?: (sectionType: string
     editable: true,
     cellEditor: "agSelectCellEditor",
     cellEditorParams: {
-      values: ["Company & Location Information", "Contact & Project Information"]
+      values: ["Company & Location Information", "Contact & Project Information", "Data Deliverables", "Container Information"]
     },
   },
   {

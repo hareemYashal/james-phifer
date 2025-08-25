@@ -29,7 +29,7 @@ import {
   toDatabaseKey,
   formatEntityTypeToDisplayName,
   categorizeEntitiesIntoSections,
-  exportToExcel,
+  // exportToExcel,
 } from "@/lib/utils";
 import { BoundingBox, DetectedRegion, ExtractedField } from "@/lib/types";
 import { dateRegex, qtyMatchRegex } from "@/lib/constant";
@@ -322,6 +322,15 @@ export default function FormParserInterface() {
   const [apiResponse, setApiResponse] = useState<any>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+
+  // Refs to trigger export from grids
+  const companyContactGridRef = useRef<{ handleExportData: () => void; getCurrentData: () => any[] }>(null);
+  const sampleDataGridRef = useRef<{ handleExportData: () => void; getCurrentData: () => { sampleData: any[]; nonSampleData: any[] } }>(null);
+
+  // State to hold current grid data for export
+  const [currentCompanyContactData, setCurrentCompanyContactData] = useState<any[]>([]);
+  const [currentSampleData, setCurrentSampleData] = useState<any[]>([]);
+  const [currentNonSampleData, setCurrentNonSampleData] = useState<any[]>([]);
 
   // Resizer states
   const [leftPanelWidth, setLeftPanelWidth] = useState(50); // Percentage
@@ -678,27 +687,87 @@ export default function FormParserInterface() {
             !(
               field.regionId.includes("entity") &&
               field.displayName ===
-                formatEntityTypeToDisplayName(itemToRemove.type)
+              formatEntityTypeToDisplayName(itemToRemove.type)
             )
         )
       );
     }
   };
 
-  // Export handler
+  // Export handler - gets data directly from grids instantly with LIGHTYEAR SPEED
   const handleExport = () => {
-    if (
-      categorizedSections.companyLocationInfo.length > 0 ||
-      categorizedSections.contactProjectInfo.length > 0 ||
-      categorizedSections.dataDeliverables.length > 0 ||
-      categorizedSections.containerInfo.length > 0 ||
-      categorizedSections.collectedSampleDataInfo.length > 0
-    ) {
-      exportToExcel(categorizedSections, "extracted_document_data");
-      ShowToast("Data exported to CSV successfully!", "success");
+    let companyData: any[] = [];
+    let sampleData: any[] = [];
+    let nonSampleData: any[] = [];
+
+    // Get data DIRECTLY from grids without any async delays
+    if (companyContactGridRef.current?.getCurrentData) {
+      companyData = companyContactGridRef.current.getCurrentData();
+    }
+
+    if (sampleDataGridRef.current?.getCurrentData) {
+      const sampleGridData = sampleDataGridRef.current.getCurrentData();
+      sampleData = sampleGridData.sampleData;
+      nonSampleData = sampleGridData.nonSampleData;
+    }
+
+    // Export IMMEDIATELY - LIGHTYEAR SPEED!
+    if (companyData.length > 0 || sampleData.length > 0 || nonSampleData.length > 0) {
+      exportGridDataToCSV(companyData, sampleData, nonSampleData);
+      ShowToast("Grid data exported to CSV successfully!", "success");
     } else {
       ShowToast("No data available to export", "error");
     }
+  };
+
+  // Function to export current grid data to CSV
+  const exportGridDataToCSV = (companyContactData: any[], sampleData: any[], nonSampleData: any[]) => {
+    let csvContent = '';
+
+    // Export Company Contact Grid Data (all 4 sections combined)
+    if (companyContactData.length > 0) {
+      csvContent += 'COMPANY & CONTACT DETAILS WITH DATA DELIVERABLES AND CONTAINER INFORMATION\n';
+      csvContent += 'Field Name,Value,Confidence,Section\n';
+
+      companyContactData.forEach((item: any) => {
+        const confidence = item.confidence ? Math.round(item.confidence * 100) + '%' : '';
+        csvContent += `"${item.fieldName}","${item.value}","${confidence}","${item.section}"\n`;
+      });
+      csvContent += '\n';
+    }
+
+    // Export Non-Sample Fields (General Information)
+    if (nonSampleData.length > 0) {
+      csvContent += 'GENERAL INFORMATION\n';
+      csvContent += 'Field Name,Value,Confidence\n';
+
+      nonSampleData.forEach((item: any) => {
+        const confidence = item.confidence ? Math.round(item.confidence * 100) + '%' : '';
+        csvContent += `"${item.fieldName}","${item.value}","${confidence}"\n`;
+      });
+      csvContent += '\n';
+    }
+
+    // Export Sample Data Grid
+    if (sampleData.length > 0) {
+      csvContent += 'SAMPLE DATA INFORMATION\n';
+      csvContent += 'Customer Sample ID,Matrix,Grab,Composite Start Date,Composite Start Time,Method\n';
+
+      sampleData.forEach((item: any) => {
+        csvContent += `"${item.customerSampleId || ''}","${item.matrix || ''}","${item.grab || ''}","${item.compositeStartDate || ''}","${item.compositeStartTime || ''}","${item.method || ''}"\n`;
+      });
+    }
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'grid_data_export.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleZoomIn = () => setScale((s) => Math.min(s + 0.2, 3));
@@ -1030,77 +1099,88 @@ export default function FormParserInterface() {
                   </p>
                 </div>
               ) : // Use AG Grid tables if enabled, otherwise use the original table view
-              useAgGrid ? (
-                categorizedSections.companyLocationInfo.length > 0 ||
-                categorizedSections.contactProjectInfo.length > 0 ||
-                categorizedSections.dataDeliverables.length > 0 ||
-                categorizedSections.containerInfo.length > 0 ||
-                categorizedSections.collectedSampleDataInfo.length > 0 ? (
-                  <div className="space-y-6">
-                    <CompanyContactGrid
-                      categorizedSections={{
-                        companyLocationInfo:
-                          categorizedSections.companyLocationInfo,
-                        contactProjectInfo:
-                          categorizedSections.contactProjectInfo,
-                      }}
+                useAgGrid ? (
+                  categorizedSections.companyLocationInfo.length > 0 ||
+                    categorizedSections.contactProjectInfo.length > 0 ||
+                    categorizedSections.dataDeliverables.length > 0 ||
+                    categorizedSections.containerInfo.length > 0 ||
+                    categorizedSections.collectedSampleDataInfo.length > 0 ? (
+                    <div className="space-y-6">
+                      <CompanyContactGrid
+                        ref={companyContactGridRef}
+                        categorizedSections={{
+                          companyLocationInfo:
+                            categorizedSections.companyLocationInfo,
+                          contactProjectInfo:
+                            categorizedSections.contactProjectInfo,
+                          dataDeliverables:
+                            categorizedSections.dataDeliverables,
+                          containerInfo:
+                            categorizedSections.containerInfo,
+                        }}
+                        onFieldChange={handleSectionFieldChange}
+                        onRemoveField={handleSectionRemoveField}
+                        onExportData={setCurrentCompanyContactData}
+                      />
+                      <SampleDataGrid
+                        ref={sampleDataGridRef}
+                        categorizedSections={{
+                          collectedSampleDataInfo:
+                            categorizedSections.collectedSampleDataInfo,
+                        }}
+                        onFieldChange={handleSectionFieldChange}
+                        onRemoveField={handleSectionRemoveField}
+                        onExportData={(sampleData, nonSampleData) => {
+                          setCurrentSampleData(sampleData);
+                          setCurrentNonSampleData(nonSampleData);
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "40px 0" }}>
+                      <FileText
+                        size={48}
+                        style={{ color: "#9ca3af", marginBottom: "16px" }}
+                      />
+                      <h3
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: "600",
+                          color: "#374151",
+                          margin: "0 0 8px 0",
+                        }}
+                      >
+                        No categorized data available
+                      </h3>
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          color: "#6b7280",
+                          margin: "0",
+                        }}
+                      >
+                        Switch to Table View to see extracted fields
+                      </p>
+                    </div>
+                  )
+                ) : // Use SpreadsheetView if we have categorized sections, otherwise use EditableTable
+                  categorizedSections.companyLocationInfo.length > 0 ||
+                    categorizedSections.contactProjectInfo.length > 0 ||
+                    categorizedSections.dataDeliverables.length > 0 ||
+                    categorizedSections.containerInfo.length > 0 ||
+                    categorizedSections.collectedSampleDataInfo.length > 0 ? (
+                    <SpreadsheetView
+                      sections={categorizedSections}
                       onFieldChange={handleSectionFieldChange}
                       onRemoveField={handleSectionRemoveField}
                     />
-                    <SampleDataGrid
-                      categorizedSections={{
-                        collectedSampleDataInfo:
-                          categorizedSections.collectedSampleDataInfo,
-                      }}
-                      onFieldChange={handleSectionFieldChange}
-                      onRemoveField={handleSectionRemoveField}
+                  ) : (
+                    <EditableTable
+                      fields={filteredFields}
+                      onFieldChange={handleFieldChange}
+                      onRemoveField={removeField}
                     />
-                  </div>
-                ) : (
-                  <div style={{ textAlign: "center", padding: "40px 0" }}>
-                    <FileText
-                      size={48}
-                      style={{ color: "#9ca3af", marginBottom: "16px" }}
-                    />
-                    <h3
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: "600",
-                        color: "#374151",
-                        margin: "0 0 8px 0",
-                      }}
-                    >
-                      No categorized data available
-                    </h3>
-                    <p
-                      style={{
-                        fontSize: "14px",
-                        color: "#6b7280",
-                        margin: "0",
-                      }}
-                    >
-                      Switch to Table View to see extracted fields
-                    </p>
-                  </div>
-                )
-              ) : // Use SpreadsheetView if we have categorized sections, otherwise use EditableTable
-              categorizedSections.companyLocationInfo.length > 0 ||
-                categorizedSections.contactProjectInfo.length > 0 ||
-                categorizedSections.dataDeliverables.length > 0 ||
-                categorizedSections.containerInfo.length > 0 ||
-                categorizedSections.collectedSampleDataInfo.length > 0 ? (
-                <SpreadsheetView
-                  sections={categorizedSections}
-                  onFieldChange={handleSectionFieldChange}
-                  onRemoveField={handleSectionRemoveField}
-                />
-              ) : (
-                <EditableTable
-                  fields={filteredFields}
-                  onFieldChange={handleFieldChange}
-                  onRemoveField={removeField}
-                />
-              )}
+                  )}
             </div>
 
             <Button

@@ -14,15 +14,19 @@ interface UseCompanyContactGridProps {
   categorizedSections?: {
     companyLocationInfo: any[];
     contactProjectInfo: any[];
+    dataDeliverables: any[];
+    containerInfo: any[];
   };
   onFieldChange?: (sectionType: string, index: number, value: string) => void;
   onRemoveField?: (sectionType: string, index: number) => void;
+  onExportData?: (data: any[]) => void;
 }
 
 export const useCompanyContactGrid = ({
   categorizedSections,
   onFieldChange,
   onRemoveField,
+  onExportData,
 }: UseCompanyContactGridProps) => {
   const gridRef = useRef<AgGridReact>(null);
   const [companyContactData, setCompanyContactData] = useState<
@@ -36,12 +40,44 @@ export const useCompanyContactGrid = ({
     if (categorizedSections) {
       const companyContactTransformed = transformCompanyContactData(
         categorizedSections.companyLocationInfo || [],
-        categorizedSections.contactProjectInfo || []
+        categorizedSections.contactProjectInfo || [],
+        categorizedSections.dataDeliverables || [],
+        categorizedSections.containerInfo || []
       );
 
       setCompanyContactData(companyContactTransformed);
     }
   }, [categorizedSections]);
+
+  // Export function to get current data directly from grid
+  const handleExportData = useCallback(() => {
+    if (gridRef.current?.api) {
+      // Get ALL rows from grid (including newly added ones)
+      const allRows: any[] = [];
+      gridRef.current.api.forEachNode((node) => {
+        allRows.push(node.data);
+      });
+
+      // Call the callback AND return the data
+      if (onExportData) {
+        onExportData(allRows);
+      }
+      return allRows;
+    }
+    return [];
+  }, [onExportData]);
+
+  // Function to get current data synchronously
+  const getCurrentData = useCallback(() => {
+    if (gridRef.current?.api) {
+      const allRows: any[] = [];
+      gridRef.current.api.forEachNode((node) => {
+        allRows.push(node.data);
+      });
+      return allRows;
+    }
+    return companyContactData; // Fallback to state
+  }, [companyContactData]);
 
   // Grid event handlers
   const onGridReady = useCallback((params: GridReadyEvent) => {
@@ -55,13 +91,13 @@ export const useCompanyContactGrid = ({
   const onCellValueChanged = useCallback(
     (event: CellValueChangedEvent) => {
       console.log("Cell value changed:", event);
-      
+
       // Skip callback for newly added rows to prevent deletion
       if (event.data.originalIndex === -1) {
         console.log("Skipping onFieldChange for new row");
         return;
       }
-      
+
       if (
         event.colDef.field === "value" &&
         onFieldChange &&
@@ -152,5 +188,7 @@ export const useCompanyContactGrid = ({
     handleExport,
     handleAddRow,
     handleDeleteSelected,
+    handleExportData,
+    getCurrentData,
   };
 };

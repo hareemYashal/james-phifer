@@ -565,6 +565,7 @@ export function categorizeEntitiesIntoSections(entities: any[]): {
 // Helper function to export data to Excel format (CSV for now, can be enhanced)
 // NOTE: This function now automatically uses the same mapping and ordering as the UI
 // because it uses formatEntityTypeToDisplayName() and receives pre-sorted sections
+/** 
 export function exportToExcel(sections: any, filename: string = 'extracted_data') {
   let csvContent = '';
 
@@ -739,3 +740,4 @@ export function exportToExcel(sections: any, filename: string = 'extracted_data'
   link.click();
   document.body.removeChild(link);
 }
+*/
