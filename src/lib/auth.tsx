@@ -39,7 +39,10 @@ const AuthCheck = ({ children }: { children: React.ReactNode }) => {
               }
               setRole(userData.role);
               localStorage.setItem("access_token", session.access_token);
-              router.push("/pdf-viewer");
+              // Only redirect to /pdf-viewer if not already on a pdf-viewer route
+              if (!window.location.pathname.startsWith("/pdf-viewer")) {
+                router.push("/pdf-viewer");
+              }
             } catch (err) {
               console.error("Error verifying user:", err);
               ShowToast("An error occurred while verifying your access.");

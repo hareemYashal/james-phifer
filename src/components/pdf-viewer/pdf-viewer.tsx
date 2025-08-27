@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState, useRef, useEffect } from "react";
-import { Document, Page as PDFPage, pdfjs } from "react-pdf";
+import { Document as PDFDocument, Page as PDFPage, pdfjs } from "react-pdf";
 import {
   Upload,
   Filter,
@@ -20,6 +20,7 @@ import {
   Zap,
   Import,
   Loader,
+  List,
 } from "lucide-react";
 import Header from "@/shared/header";
 import {
@@ -46,6 +47,7 @@ import ConfirmationModal from "@/shared/DataConfirmationModal";
 import { CompanyContactGrid } from "../grid-tables/company-contact-grid/company-contact-grid";
 import { SampleDataGrid } from "../grid-tables/sample-data-grid/sample-data-grid";
 import { Button } from "../ui/button";
+import { Document as DocumentType } from "@/types";
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
@@ -510,6 +512,11 @@ export default function FormParserInterface() {
   const [sending, setSending] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
+  // Documents History states
+  const [isDocumentsDropdownOpen, setIsDocumentsDropdownOpen] = useState(false);
+  const [documents, setDocuments] = useState<DocumentType[]>([]);
+  const [isDocumentsLoading, setIsDocumentsLoading] = useState(false);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
 
@@ -799,9 +806,33 @@ export default function FormParserInterface() {
     try {
       const token = localStorage.getItem("access_token");
 
-      const formData = new FormData();
+      // Collect latest data from both AG grids
+      let companyContactData: any[] = [];
+      let sampleData: any[] = [];
+      let nonSampleData: any[] = [];
 
-      formData.append("fields", JSON.stringify(extractedFields));
+      // Get current data from Company Contact Grid
+      if (companyContactGridRef.current?.getCurrentData) {
+        companyContactData = companyContactGridRef.current.getCurrentData();
+      }
+
+      // Get current data from Sample Data Grid
+      if (sampleDataGridRef.current?.getCurrentData) {
+        const sampleGridData = sampleDataGridRef.current.getCurrentData();
+        sampleData = sampleGridData.sampleData;
+        nonSampleData = sampleGridData.nonSampleData;
+      }
+
+      // Prepare the data payload with latest grid data
+      const gridData = {
+        companyContactData,
+        sampleData,
+        nonSampleData,
+        categorizedSections, // Keep categorized sections for context
+      };
+
+      const formData = new FormData();
+      formData.append("fields", JSON.stringify(gridData));
 
       if (file) {
         formData.append("file", file);
@@ -823,6 +854,13 @@ export default function FormParserInterface() {
         if (result.fileUrl) {
           console.log("Document stored at:", result.fileUrl);
         }
+
+        // Log the data that was sent
+        console.log("Latest grid data sent:", {
+          companyContactData: companyContactData.length,
+          sampleData: sampleData.length,
+          nonSampleData: nonSampleData.length,
+        });
       } else {
         ShowToast("Error: " + result.error, "error");
       }
@@ -840,6 +878,70 @@ export default function FormParserInterface() {
   const handleCancelSend = () => {
     setShowConfirmationModal(false);
   };
+
+  // Documents History functions
+  const fetchDocuments = async () => {
+    try {
+      setIsDocumentsLoading(true);
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        console.error("Access token not found");
+        return;
+      }
+
+      const response = await fetch("/api/my-documents", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error fetching documents:", errorData.error);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("Documents DATA", data);
+      setDocuments(data.documents || []);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+    } finally {
+      setIsDocumentsLoading(false);
+    }
+  };
+
+  const handleDocumentsHistoryClick = () => {
+    if (!isDocumentsDropdownOpen) {
+      fetchDocuments();
+    }
+    setIsDocumentsDropdownOpen(!isDocumentsDropdownOpen);
+  };
+
+  const handleDocumentClick = (doc: DocumentType) => {
+    console.log("Selected document:", doc);
+    setIsDocumentsDropdownOpen(false);
+
+    // Navigate to the specific document viewer route
+    window.location.href = `/pdf-viewer/${doc.id}`;
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (isDocumentsDropdownOpen && !target.closest('[data-documents-dropdown]')) {
+        setIsDocumentsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDocumentsDropdownOpen]);
 
   return (
     <div
@@ -1422,6 +1524,113 @@ export default function FormParserInterface() {
                     <RefreshCw size={14} />
                     Reset
                   </button>
+
+                  {/* Documents History button with dropdown */}
+                  <div style={{ position: "relative" }} data-documents-dropdown>
+                    <button
+                      onClick={handleDocumentsHistoryClick}
+                      style={{
+                        padding: "6px 12px",
+                        backgroundColor: "white",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        fontSize: "12px",
+                      }}
+                      title="Documents History"
+                    >
+                      <List size={16} />
+                      Documents History
+                    </button>
+
+                    {/* Dropdown */}
+                    {isDocumentsDropdownOpen && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: "0",
+                          backgroundColor: "white",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "4px",
+                          minWidth: "250px",
+                          maxHeight: "300px",
+                          overflowY: "auto",
+                          zIndex: 1000,
+                          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                          marginTop: "4px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            padding: "8px 12px",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            color: "white",
+                            backgroundColor: "#3b82f6",
+                            borderRadius: "4px 4px 0 0",
+                          }}
+                        >
+                          Documents History
+                        </div>
+
+                        {isDocumentsLoading ? (
+                          <div
+                            style={{
+                              padding: "20px",
+                              textAlign: "center",
+                              color: "#6b7280",
+                              fontSize: "12px",
+                            }}
+                          >
+                            Loading documents...
+                          </div>
+                        ) : (
+                          <ul style={{ listStyle: "none", padding: "16px", margin: 0 }}>
+                            {documents.length === 0 ? (
+                              <li
+                                style={{
+                                  padding: "8px 12px",
+                                  textAlign: "center",
+                                  color: "#6b7280",
+                                  fontSize: "14px",
+                                }}
+                              >
+                                No documents found in this lab
+                              </li>
+                            ) : (
+                              documents.map((doc) => (
+                                <li
+                                  key={doc.id}
+                                  onClick={() => handleDocumentClick(doc)}
+                                  style={{
+                                    padding: "8px 12px",
+                                    cursor: "pointer",
+                                    backgroundColor: "transparent",
+                                    borderRadius: "4px",
+                                    marginBottom: "8px",
+                                    fontSize: "14px",
+                                    transition: "background-color 0.2s ease",
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#e2e8f0";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = "transparent";
+                                  }}
+                                >
+                                  COC Document - {doc.id}
+                                </li>
+                              ))
+                            )}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {/* Show NEW DOCUMENT button only when pdfUrl is set */}
                 <div
@@ -1534,7 +1743,7 @@ export default function FormParserInterface() {
                   onMouseUp={handleMouseUp}
                   onMouseLeave={handleMouseUp} // Stop dragging if the mouse leaves the container
                 >
-                  <Document
+                  <PDFDocument
                     file={pdfUrl}
                     onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                     loading={
@@ -1563,13 +1772,13 @@ export default function FormParserInterface() {
                       renderTextLayer={false}
                       renderAnnotationLayer={false}
                     />
-                  </Document>
+                  </PDFDocument>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center">
                 <Upload className="mb-4 text-gray-400" size={48} />
-                <h3 className="text-lg font-semibold text-gray-800">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
                   Upload a document to begin
                 </h3>
                 {/* <p

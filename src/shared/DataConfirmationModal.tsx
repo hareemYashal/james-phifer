@@ -57,11 +57,11 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           }}
         >
           <h3 style={{ marginBottom: "16px", fontSize: "18px" }}>
-            Confirm Data Submission
+            Confirm Data Submission and Document Upload
           </h3>
           <X onClick={onClose} />
         </div>
-        <p style={{ marginBottom: "16px", fontSize: "14px", color: "#6b7280" }}>
+        {/* <p style={{ marginBottom: "16px", fontSize: "14px", color: "#6b7280" }}>
           Please review the data below before submitting it to the database.
         </p>
 
@@ -69,7 +69,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           fields={fields}
           onFieldChange={onFieldChange}
           onRemoveField={onRemoveField}
-        />
+        /> */}
 
         <div
           style={{

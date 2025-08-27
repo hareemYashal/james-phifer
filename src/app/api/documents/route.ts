@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     let parsedFields;
     try {
       parsedFields = JSON.parse(fields as string);
-      if (!Array.isArray(parsedFields)) {
+      if (!parsedFields || typeof parsedFields !== 'object' || Array.isArray(parsedFields)) {
         return NextResponse.json(
           { error: "Invalid fields format" },
           { status: 400 }
