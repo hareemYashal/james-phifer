@@ -2,14 +2,14 @@
 
 import type React from "react";
 import { useState, useRef, useEffect } from "react";
-import { Document, Page as PDFPage, pdfjs } from "react-pdf";
+import { Document as PDFDocument, Page as PDFPage, pdfjs } from "react-pdf";
 import {
   Upload,
-  Filter,
-  Search,
+  // Filter, // COMMENTED OUT - Not used anymore
+  // Search, // COMMENTED OUT - Not used anymore
   ZoomIn,
   ZoomOut,
-  X,
+  // X, // COMMENTED OUT - Not used anymore
   ChevronLeft,
   ChevronRight,
   RotateCcw,
@@ -20,12 +20,15 @@ import {
   Zap,
   Import,
   Loader,
+  List,
+  // History, // COMMENTED OUT - Not used anymore
 } from "lucide-react";
 import Header from "@/shared/header";
 import {
   categorizeText,
   extractKeyValuePairsFromText,
   processDocumentAPI,
+  processFastAPI,
   toDatabaseKey,
   formatEntityTypeToDisplayName,
   categorizeEntitiesIntoSections,
@@ -34,18 +37,24 @@ import {
 import { BoundingBox, DetectedRegion, ExtractedField } from "@/lib/types";
 import { dateRegex, qtyMatchRegex } from "@/lib/constant";
 import { ShowToast } from "@/shared/showToast";
-import EditableTable, { SpreadsheetView } from "../table";
+// import EditableTable, { SpreadsheetView } from "../table"; // COMMENTED OUT - Using AG Grid only now
 
+// COMMENTED OUT - Old resizable imports not used anymore  
+/*
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+*/
 
 import ConfirmationModal from "@/shared/DataConfirmationModal";
-import { CompanyContactGrid } from "../grid-tables/company-contact-grid/company-contact-grid";
-import { SampleDataGrid } from "../grid-tables/sample-data-grid/sample-data-grid";
+// import { CompanyContactGrid } from "../grid-tables/company-contact-grid/company-contact-grid";
+// import { SampleDataGrid } from "../grid-tables/sample-data-grid/sample-data-grid";
+import { V2DataGrid } from "../grid-tables/v2-data-grid/v2-data-grid";
+import { sampleExtractedFields } from "@/lib/sample-extracted-fields";
 import { Button } from "../ui/button";
+import { Document as DocumentType } from "@/types";
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
@@ -291,9 +300,10 @@ export default function FormParserInterface() {
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.2);
   const [rotate, setRotate] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState<"keyvalue">("keyvalue");
-  const [filterText, setFilterText] = useState<string>("");
-  const [useAgGrid, setUseAgGrid] = useState<boolean>(true);
+  // OLD STATE VARIABLES - COMMENTED OUT - Using AG Grid only now
+  // const [activeTab, setActiveTab] = useState<"keyvalue">("keyvalue");
+  // const [filterText, setFilterText] = useState<string>("");
+  // const [useAgGrid, setUseAgGrid] = useState<boolean>(true);
 
   // Processing states
   const [loading, setLoading] = useState(false);
@@ -324,13 +334,15 @@ export default function FormParserInterface() {
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
 
   // Refs to trigger export from grids
-  const companyContactGridRef = useRef<{ handleExportData: () => void; getCurrentData: () => any[] }>(null);
-  const sampleDataGridRef = useRef<{ handleExportData: () => void; getCurrentData: () => { sampleData: any[]; nonSampleData: any[] } }>(null);
+  // const companyContactGridRef = useRef<{ handleExportData: () => void; getCurrentData: () => any[] }>(null);
+  // const sampleDataGridRef = useRef<{ handleExportData: () => void; getCurrentData: () => { sampleData: any[]; nonSampleData: any[] } }>(null);
+  const v2DataGridRef = useRef<{ handleExportData: () => void; getCurrentData: () => any[] }>(null);
 
   // State to hold current grid data for export
   const [currentCompanyContactData, setCurrentCompanyContactData] = useState<any[]>([]);
   const [currentSampleData, setCurrentSampleData] = useState<any[]>([]);
   const [currentNonSampleData, setCurrentNonSampleData] = useState<any[]>([]);
+  const [fastData, setFastData] = useState<any[]>([]);
 
   // Resizer states
   const [leftPanelWidth, setLeftPanelWidth] = useState(50); // Percentage
@@ -347,15 +359,18 @@ export default function FormParserInterface() {
 
   const pdfViewerRef = useRef<HTMLDivElement>(null);
 
-  // Refs for input fields to enable Enter-to-next navigation
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  // Refs for input fields to enable Enter-to-next navigation - COMMENTED OUT
+  // const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // OLD FILTERED FIELDS LOGIC - COMMENTED OUT - Using AG Grid only now
+  /*
   const filteredFields = extractedFields.filter(
     (field) =>
       field.key.toLowerCase().includes(filterText.toLowerCase()) ||
       field.displayName.toLowerCase().includes(filterText.toLowerCase()) ||
       field.value.toLowerCase().includes(filterText.toLowerCase())
   );
+  */
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!pdfViewerRef.current) return;
@@ -510,6 +525,11 @@ export default function FormParserInterface() {
   const [sending, setSending] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
+  // Documents History states
+  const [isDocumentsDropdownOpen, setIsDocumentsDropdownOpen] = useState(false);
+  const [documents, setDocuments] = useState<DocumentType[]>([]);
+  const [isDocumentsLoading, setIsDocumentsLoading] = useState(false);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
 
@@ -545,8 +565,25 @@ export default function FormParserInterface() {
     setProcessingTime(null);
     setApiResponse(null);
     setProcessingStep("processing");
+    // await processDocument(selectedFile);
+    await processDocumentWithFastAPI(selectedFile);
+  };
 
-    await processDocument(selectedFile);
+  // I need to add a new function to process the document with the new API
+  const processDocumentWithFastAPI = async (file: File) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await processFastAPI(file);
+      console.log('FastAPI result:', result);
+      console.log('FastAPI result extracted_fields:', result.extracted_fields);
+      setFastData(result.extracted_fields);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to process document with FastAPI");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const processDocument = async (file: File) => {
@@ -610,6 +647,8 @@ export default function FormParserInterface() {
     }
   };
 
+  // OLD FIELD MANIPULATION HANDLERS - COMMENTED OUT - Using AG Grid only now
+  /*
   const handleFieldChange = (index: number, value: string) => {
     const actualIndex = extractedFields.findIndex(
       (field, idx) => filteredFields[index] === field
@@ -627,93 +666,116 @@ export default function FormParserInterface() {
       prev.filter((field) => field !== fieldToRemove)
     );
   };
+  */
 
   // Handlers for spreadsheet view sections
-  const handleSectionFieldChange = (
-    sectionType: string,
-    index: number,
-    value: string
-  ) => {
-    setCategorizedSections((prev) => ({
-      ...prev,
-      [sectionType]: prev[sectionType as keyof typeof prev].map((item, idx) =>
-        idx === index ? { ...item, value } : item
-      ),
-    }));
+  // const handleSectionFieldChange = (
+  //   sectionType: string,
+  //   index: number,
+  //   value: string
+  // ) => {
+  //   setCategorizedSections((prev) => ({
+  //     ...prev,
+  //     [sectionType]: prev[sectionType as keyof typeof prev].map((item, idx) =>
+  //       idx === index ? { ...item, value } : item
+  //     ),
+  //   }));
 
-    // Also update the extractedFields for consistency
-    const sectionItems =
-      categorizedSections[sectionType as keyof typeof categorizedSections];
-    const item = sectionItems[index];
-    if (item) {
-      const fieldIndex = extractedFields.findIndex(
-        (field) =>
-          field.regionId.includes("entity") &&
-          field.displayName === formatEntityTypeToDisplayName(item.type)
-      );
-      if (fieldIndex !== -1) {
-        setExtractedFields((prev) =>
-          prev.map((field, idx) =>
-            idx === fieldIndex ? { ...field, value } : field
-          )
-        );
-      }
+  //   // Also update the extractedFields for consistency
+  //   const sectionItems =
+  //     categorizedSections[sectionType as keyof typeof categorizedSections];
+  //   const item = sectionItems[index];
+  //   if (item) {
+  //     const fieldIndex = extractedFields.findIndex(
+  //       (field) =>
+  //         field.regionId.includes("entity") &&
+  //         field.displayName === formatEntityTypeToDisplayName(item.type)
+  //     );
+  //     if (fieldIndex !== -1) {
+  //       setExtractedFields((prev) =>
+  //         prev.map((field, idx) =>
+  //           idx === fieldIndex ? { ...field, value } : field
+  //         )
+  //       );
+  //     }
+  //   }
+  // };
+
+  // const handleSectionRemoveField = (sectionType: string, index: number) => {
+  //   const sectionData =
+  //     categorizedSections[sectionType as keyof typeof categorizedSections];
+
+  //   // Handle out-of-bounds index gracefully (can happen when removing multiple items)
+  //   if (!sectionData || index >= sectionData.length || index < 0) {
+  //     return;
+  //   }
+
+  //   const itemToRemove = sectionData[index];
+
+  //   setCategorizedSections((prev) => ({
+  //     ...prev,
+  //     [sectionType]: prev[sectionType as keyof typeof prev].filter(
+  //       (_, idx) => idx !== index
+  //     ),
+  //   }));
+
+  //   // Also remove from extractedFields
+  //   if (itemToRemove) {
+  //     setExtractedFields((prev) =>
+  //       prev.filter(
+  //         (field) =>
+  //           !(
+  //             field.regionId.includes("entity") &&
+  //             field.displayName ===
+  //             formatEntityTypeToDisplayName(itemToRemove.type)
+  //           )
+  //       )
+  //     );
+  //   }
+  // };
+
+  // Handle field change for fastData (V2DataGrid)
+  const handleFastDataFieldChange = (index: number, value: string) => {
+    if (fastData && fastData.length > index && index >= 0) {
+      const updatedData = [...fastData];
+      updatedData[index] = { ...updatedData[index], value };
+      setFastData(updatedData);
     }
   };
 
-  const handleSectionRemoveField = (sectionType: string, index: number) => {
-    const sectionData =
-      categorizedSections[sectionType as keyof typeof categorizedSections];
-
-    // Handle out-of-bounds index gracefully (can happen when removing multiple items)
-    if (!sectionData || index >= sectionData.length || index < 0) {
-      return;
-    }
-
-    const itemToRemove = sectionData[index];
-
-    setCategorizedSections((prev) => ({
-      ...prev,
-      [sectionType]: prev[sectionType as keyof typeof prev].filter(
-        (_, idx) => idx !== index
-      ),
-    }));
-
-    // Also remove from extractedFields
-    if (itemToRemove) {
-      setExtractedFields((prev) =>
-        prev.filter(
-          (field) =>
-            !(
-              field.regionId.includes("entity") &&
-              field.displayName ===
-              formatEntityTypeToDisplayName(itemToRemove.type)
-            )
-        )
-      );
+  // Handle field removal for fastData (V2DataGrid)
+  const handleFastDataRemoveField = (index: number) => {
+    if (fastData && fastData.length > index && index >= 0) {
+      const updatedData = [...fastData];
+      updatedData.splice(index, 1);
+      setFastData(updatedData);
     }
   };
 
   // Export handler - gets data directly from grids instantly with LIGHTYEAR SPEED
   const handleExport = () => {
     let companyData: any[] = [];
-    let sampleData: any[] = [];
-    let nonSampleData: any[] = [];
+    // let sampleData: any[] = [];
+    // let nonSampleData: any[] = [];
 
     // Get data DIRECTLY from grids without any async delays
-    if (companyContactGridRef.current?.getCurrentData) {
-      companyData = companyContactGridRef.current.getCurrentData();
-    }
+    // if (companyContactGridRef.current?.getCurrentData) {
+    //   companyData = companyContactGridRef.current.getCurrentData();
+    // }
 
-    if (sampleDataGridRef.current?.getCurrentData) {
-      const sampleGridData = sampleDataGridRef.current.getCurrentData();
-      sampleData = sampleGridData.sampleData;
-      nonSampleData = sampleGridData.nonSampleData;
+    // if (sampleDataGridRef.current?.getCurrentData) {
+    //   const sampleGridData = sampleDataGridRef.current.getCurrentData();
+    //   sampleData = sampleGridData.sampleData;
+    //   nonSampleData = sampleGridData.nonSampleData;
+    // }
+
+    if (v2DataGridRef.current?.getCurrentData) {
+      companyData = v2DataGridRef.current.getCurrentData();
     }
 
     // Export IMMEDIATELY - LIGHTYEAR SPEED!
-    if (companyData.length > 0 || sampleData.length > 0 || nonSampleData.length > 0) {
-      exportGridDataToCSV(companyData, sampleData, nonSampleData);
+    if (companyData.length > 0) {
+      exportGridDataToCSV(companyData);
       ShowToast("Grid data exported to CSV successfully!", "success");
     } else {
       ShowToast("No data available to export", "error");
@@ -721,12 +783,12 @@ export default function FormParserInterface() {
   };
 
   // Function to export current grid data to CSV
-  const exportGridDataToCSV = (companyContactData: any[], sampleData: any[], nonSampleData: any[]) => {
+  const exportGridDataToCSV = (companyContactData: any[]) => {
     let csvContent = '';
 
-    // Export Company Contact Grid Data (all 4 sections combined)
+    // Export V2DataGrid Data (extracted fields)
     if (companyContactData.length > 0) {
-      csvContent += 'COMPANY & CONTACT DETAILS WITH DATA DELIVERABLES AND CONTAINER INFORMATION\n';
+      csvContent += 'EXTRACTED FIELDS DATA\n';
       csvContent += 'Field Name,Value,Confidence,Section\n';
 
       companyContactData.forEach((item: any) => {
@@ -734,36 +796,45 @@ export default function FormParserInterface() {
         csvContent += `"${item.fieldName}","${item.value}","${confidence}","${item.section}"\n`;
       });
       csvContent += '\n';
+    } else {
+      console.log("No company contact data to export");
     }
 
     // Export Non-Sample Fields (General Information)
-    if (nonSampleData.length > 0) {
-      csvContent += 'GENERAL INFORMATION\n';
-      csvContent += 'Field Name,Value,Confidence\n';
+    // if (nonSampleData.length > 0) {
+    //   csvContent += 'GENERAL INFORMATION\n';
+    //   csvContent += 'Field Name,Value,Confidence\n';
 
-      nonSampleData.forEach((item: any) => {
-        const confidence = item.confidence ? Math.round(item.confidence * 100) + '%' : '';
-        csvContent += `"${item.fieldName}","${item.value}","${confidence}"\n`;
-      });
-      csvContent += '\n';
-    }
+    //   nonSampleData.forEach((item: any) => {
+    //     const confidence = item.confidence ? Math.round(item.confidence * 100) + '%' : '';
+    //     csvContent += `"${item.fieldName}","${item.value}","${confidence}"\n`;
+    //   });
+    //   csvContent += '\n';
+    // }
 
     // Export Sample Data Grid
-    if (sampleData.length > 0) {
-      csvContent += 'SAMPLE DATA INFORMATION\n';
-      csvContent += 'Customer Sample ID,Matrix,Grab,Composite Start Date,Composite Start Time,Method\n';
+    // if (sampleData.length > 0) {
+    //   csvContent += 'SAMPLE DATA INFORMATION\n';
+    //   csvContent += 'Customer Sample ID,Matrix,Grab,Composite Start Date,Composite Start Time,Method\n';
 
-      sampleData.forEach((item: any) => {
-        csvContent += `"${item.customerSampleId || ''}","${item.matrix || ''}","${item.grab || ''}","${item.compositeStartDate || ''}","${item.compositeStartTime || ''}","${item.method || ''}"\n`;
-      });
+    //   sampleData.forEach((item: any) => {
+    //     csvContent += `"${item.customerSampleId || ''}","${item.matrix || ''}","${item.grab || ''}","${item.compositeStartDate || ''}","${item.compositeStartTime || ''}","${item.method || ''}"\n`;
+    //   });
+    // }
+
+    // Ensure we have some content to export
+    if (csvContent.trim() === '') {
+      csvContent = 'EXTRACTED FIELDS DATA\nField Name,Value,Confidence,Section\nNo data available\n';
+      console.log("No CSV content generated, using fallback");
     }
 
     // Create and download file
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', 'grid_data_export.csv');
+    link.setAttribute('download', 'extracted_fields_export.csv');
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -788,20 +859,50 @@ export default function FormParserInterface() {
     setPageNumber((prev) => Math.min(numPages, prev + 1));
   };
 
+  // OLD PAGE FIELD FILTERING - COMMENTED OUT - Using AG Grid only now
+  /*
   const getFieldsForCurrentPage = () => {
     return filteredFields.filter((field) => field.pageNumber === pageNumber);
   };
 
   const getCurrentPageFields = getFieldsForCurrentPage();
+  */
 
   const handleConfirmSend: any = async () => {
     setSending(true);
     try {
       const token = localStorage.getItem("access_token");
 
-      const formData = new FormData();
+      // Collect latest data from both AG grids
+      let companyContactData: any[] = [];
+      // let sampleData: any[] = [];
+      // let nonSampleData: any[] = [];
 
-      formData.append("fields", JSON.stringify(extractedFields));
+      // Get current data from V2 Data Grid
+      // if (companyContactGridRef.current?.getCurrentData) {
+      //   companyContactData = companyContactGridRef.current.getCurrentData();
+      // }
+
+      // if (sampleDataGridRef.current?.getCurrentData) {
+      //   const sampleGridData = sampleDataGridRef.current.getCurrentData();
+      //   sampleData = sampleGridData.sampleData;
+      //   nonSampleData = sampleGridData.nonSampleData;
+      // }
+
+      if (v2DataGridRef.current?.getCurrentData) {
+        companyContactData = v2DataGridRef.current.getCurrentData();
+      }
+
+      // Prepare the data payload with latest grid data
+      const gridData = {
+        companyContactData,
+        // sampleData,
+        // nonSampleData,
+        categorizedSections, // Keep categorized sections for context
+      };
+
+      const formData = new FormData();
+      formData.append("fields", JSON.stringify(gridData));
 
       if (file) {
         formData.append("file", file);
@@ -823,6 +924,13 @@ export default function FormParserInterface() {
         if (result.fileUrl) {
           console.log("Document stored at:", result.fileUrl);
         }
+
+        // Log the data that was sent
+        console.log("Latest grid data sent:", {
+          companyContactData: companyContactData.length,
+          // sampleData: sampleData.length,
+          // nonSampleData: nonSampleData.length,
+        });
       } else {
         ShowToast("Error: " + result.error, "error");
       }
@@ -840,6 +948,70 @@ export default function FormParserInterface() {
   const handleCancelSend = () => {
     setShowConfirmationModal(false);
   };
+
+  // Documents History functions
+  const fetchDocuments = async () => {
+    try {
+      setIsDocumentsLoading(true);
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        console.error("Access token not found");
+        return;
+      }
+
+      const response = await fetch("/api/my-documents", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error fetching documents:", errorData.error);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("Documents DATA", data);
+      setDocuments(data.documents || []);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+    } finally {
+      setIsDocumentsLoading(false);
+    }
+  };
+
+  const handleDocumentsHistoryClick = () => {
+    if (!isDocumentsDropdownOpen) {
+      fetchDocuments();
+    }
+    setIsDocumentsDropdownOpen(!isDocumentsDropdownOpen);
+  };
+
+  const handleDocumentClick = (doc: DocumentType) => {
+    console.log("Selected document:", doc);
+    setIsDocumentsDropdownOpen(false);
+
+    // Navigate to the specific document viewer route
+    window.location.href = `/pdf-viewer/${doc.id}`;
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (isDocumentsDropdownOpen && !target.closest('[data-documents-dropdown]')) {
+        setIsDocumentsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDocumentsDropdownOpen]);
 
   return (
     <div
@@ -869,31 +1041,161 @@ export default function FormParserInterface() {
               style={{
                 display: "flex",
                 backgroundColor: "#f8fafc",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0 16px",
               }}
             >
-              {[{ key: "keyvalue", label: "COC Document" }].map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key as any)}
+              {/* OLD TAB NAVIGATION - COMMENTED OUT - Using AG Grid only now
+              <div style={{ display: "flex" }}>
+                {[{ key: "keyvalue", label: "COC Document" }].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key as any)}
+                    style={{
+                      padding: "12px 16px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: activeTab === tab.key ? "#3b82f6" : "#6b7280",
+                      backgroundColor:
+                        activeTab === tab.key ? "white" : "transparent",
+                      border: "none",
+                      borderBottom:
+                        activeTab === tab.key ? "2px solid #3b82f6" : "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              */}
+              <div style={{ display: "flex" }}>
+                <div
                   style={{
                     padding: "12px 16px",
                     fontSize: "12px",
                     fontWeight: "600",
-                    color: activeTab === tab.key ? "#3b82f6" : "#6b7280",
-                    backgroundColor:
-                      activeTab === tab.key ? "white" : "transparent",
+                    color: "#3b82f6",
+                    backgroundColor: "white",
                     border: "none",
-                    borderBottom:
-                      activeTab === tab.key ? "2px solid #3b82f6" : "none",
-                    cursor: "pointer",
+                    borderBottom: "2px solid #3b82f6",
                   }}
                 >
-                  {tab.label}
-                </button>
-              ))}
+                  COC Document
+                </div>
+              </div>
+
+              {/* Documents History Dropdown */}
+              <div style={{ position: "relative" }} data-documents-dropdown>
+                {/* <button
+                  onClick={handleDocumentsHistoryClick}
+                  style={{
+                    padding: "6px 12px",
+                    backgroundColor: "white",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontSize: "12px",
+                    marginTop: "10px",
+                  }}
+                  title="Documents History"
+                >
+                  <List size={16} />
+                  Documents History
+                </button> */}
+
+                {/* Dropdown */}
+                {isDocumentsDropdownOpen && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      right: "0",
+                      backgroundColor: "white",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "4px",
+                      minWidth: "250px",
+                      maxHeight: "300px",
+                      overflowY: "auto",
+                      zIndex: 1000,
+                      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                      marginTop: "4px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: "8px 12px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        color: "white",
+                        backgroundColor: "#3b82f6",
+                        borderRadius: "4px 4px 0 0",
+                      }}
+                    >
+                      Documents History
+                    </div>
+
+                    {isDocumentsLoading ? (
+                      <div
+                        style={{
+                          padding: "20px",
+                          textAlign: "center",
+                          color: "#6b7280",
+                          fontSize: "12px",
+                        }}
+                      >
+                        Loading documents...
+                      </div>
+                    ) : (
+                      <ul style={{ listStyle: "none", padding: "16px", margin: 0 }}>
+                        {documents.length === 0 ? (
+                          <li
+                            style={{
+                              padding: "8px 12px",
+                              textAlign: "center",
+                              color: "#6b7280",
+                              fontSize: "14px",
+                            }}
+                          >
+                            No documents found in this lab
+                          </li>
+                        ) : (
+                          documents.map((doc) => (
+                            <li
+                              key={doc.id}
+                              onClick={() => handleDocumentClick(doc)}
+                              style={{
+                                padding: "8px 12px",
+                                cursor: "pointer",
+                                backgroundColor: "transparent",
+                                borderRadius: "4px",
+                                marginBottom: "8px",
+                                fontSize: "14px",
+                                transition: "background-color 0.2s ease",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#e2e8f0";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "transparent";
+                              }}
+                            >
+                              COC Document - {doc.id}
+                            </li>
+                          ))
+                        )}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* View Toggle */}
+            {/* View Toggle - COMMENTED OUT - Using AG Grid only now */}
             {/* <div
               style={{
                 padding: "8px 16px",
@@ -1068,7 +1370,53 @@ export default function FormParserInterface() {
                     </button>
                   </div>
                 </div>
-              ) : extractedFields.length === 0 ? (
+              ) : // Check for fastData first (new FastAPI endpoint)
+                fastData && fastData.length > 0 ? (
+                  <div className="space-y-6">
+                    <V2DataGrid
+                      ref={v2DataGridRef}
+                      extractedFields={fastData}
+                      onFieldChange={handleFastDataFieldChange}
+                      onRemoveField={handleFastDataRemoveField}
+                      onExportData={setCurrentCompanyContactData}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ textAlign: "center", padding: "40px 0" }}>
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+                      <FileText
+                        size={48}
+                        style={{ color: "#9ca3af" }}
+                      />
+                    </div>
+                    <h3
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: "#374151",
+                        margin: "0 0 8px 0",
+                      }}
+                    >
+                      {processingStep === "upload"
+                        ? "No Document Uploaded"
+                        : "No Data Available"}
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#6b7280",
+                        margin: "0",
+                      }}
+                    >
+                      {processingStep === "upload"
+                        ? "Upload a document to begin processing"
+                        : "No extracted data to display"}
+                    </p>
+                  </div>
+                )}
+
+              {/* LEGACY CODE - COMMENTED OUT 
+              extractedFields.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10">
                   <FileText
                     size={48}
@@ -1098,7 +1446,73 @@ export default function FormParserInterface() {
                       : `${detectedRegions.length} regions detected, but no key-value pairs extracted`}
                   </p>
                 </div>
-              ) : // Use AG Grid tables if enabled, otherwise use the original table view
+              ) : // ALWAYS use AG Grid tables now for legacy categorized data - old table view commented out
+                categorizedSections.companyLocationInfo.length > 0 ||
+                  categorizedSections.contactProjectInfo.length > 0 ||
+                  categorizedSections.dataDeliverables.length > 0 ||
+                  categorizedSections.containerInfo.length > 0 ||
+                  categorizedSections.collectedSampleDataInfo.length > 0 ? (
+                  <div className="space-y-6">
+                    <CompanyContactGrid
+                      ref={companyContactGridRef}
+                      categorizedSections={{
+                        companyLocationInfo:
+                          categorizedSections.companyLocationInfo,
+                        contactProjectInfo:
+                          categorizedSections.contactProjectInfo,
+                        dataDeliverables:
+                          categorizedSections.dataDeliverables,
+                        containerInfo:
+                          categorizedSections.containerInfo,
+                      }}
+                      onFieldChange={handleSectionFieldChange}
+                      onRemoveField={handleSectionRemoveField}
+                      onExportData={setCurrentCompanyContactData}
+                    />
+                    <SampleDataGrid
+                      ref={sampleDataGridRef}
+                      categorizedSections={{
+                        collectedSampleDataInfo:
+                          categorizedSections.collectedSampleDataInfo,
+                      }}
+                      onFieldChange={handleSectionFieldChange}
+                      onRemoveField={handleSectionRemoveField}
+                      onExportData={(sampleData, nonSampleData) => {
+                        setCurrentSampleData(sampleData);
+                        setCurrentNonSampleData(nonSampleData);
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ textAlign: "center", padding: "40px 0" }}>
+                    <FileText
+                      size={48}
+                      style={{ color: "#9ca3af", marginBottom: "16px" }}
+                    />
+                    <h3
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: "#374151",
+                        margin: "0 0 8px 0",
+                      }}
+                    >
+                      No categorized data available
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#6b7280",
+                        margin: "0",
+                      }}
+                    >
+                      Upload a document to see extracted data
+                    </p>
+                  </div>
+                )}
+              */}
+
+              {/* OLD TABLE VIEW METHODS - COMMENTED OUT 
                 useAgGrid ? (
                   categorizedSections.companyLocationInfo.length > 0 ||
                     categorizedSections.contactProjectInfo.length > 0 ||
@@ -1180,7 +1594,8 @@ export default function FormParserInterface() {
                       onFieldChange={handleFieldChange}
                       onRemoveField={removeField}
                     />
-                  )}
+                  )
+              */}
             </div>
 
             <Button
@@ -1422,6 +1837,9 @@ export default function FormParserInterface() {
                     <RefreshCw size={14} />
                     Reset
                   </button>
+
+                  {/* Documents History button with dropdown */}
+
                 </div>
                 {/* Show NEW DOCUMENT button only when pdfUrl is set */}
                 <div
@@ -1474,7 +1892,7 @@ export default function FormParserInterface() {
                         boxShadow: "0 2px 4px rgba(59, 130, 246, 0.2)",
                         transition: "all 0.2s ease",
                       }}
-                      disabled={extractedFields.length === 0}
+                      disabled={fastData.length === 0}
                     >
                       <Import size={16} />
                       Export to Excel
@@ -1534,7 +1952,7 @@ export default function FormParserInterface() {
                   onMouseUp={handleMouseUp}
                   onMouseLeave={handleMouseUp} // Stop dragging if the mouse leaves the container
                 >
-                  <Document
+                  <PDFDocument
                     file={pdfUrl}
                     onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                     loading={
@@ -1563,13 +1981,13 @@ export default function FormParserInterface() {
                       renderTextLayer={false}
                       renderAnnotationLayer={false}
                     />
-                  </Document>
+                  </PDFDocument>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center">
                 <Upload className="mb-4 text-gray-400" size={48} />
-                <h3 className="text-lg font-semibold text-gray-800">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
                   Upload a document to begin
                 </h3>
                 {/* <p
@@ -1611,7 +2029,8 @@ export default function FormParserInterface() {
         </div>
       </div>
 
-      {/* <ResizablePanelGroup
+      {/* OLD RESIZABLE PANEL GROUP - COMMENTED OUT - Using custom resizer now
+      <ResizablePanelGroup
         direction="horizontal"
         className="min-h-[200px] max-w-full rounded-lg border md:min-w-[450px]"
       >
@@ -1631,8 +2050,8 @@ export default function FormParserInterface() {
       <ConfirmationModal
         isOpen={showConfirmationModal}
         fields={extractedFields}
-        onFieldChange={handleFieldChange}
-        onRemoveField={removeField}
+        onFieldChange={() => { }} // Dummy handler - old functionality commented out
+        onRemoveField={() => { }} // Dummy handler - old functionality commented out
         onClose={handleCancelSend}
         onConfirm={handleConfirmSend}
         isSending={sending}

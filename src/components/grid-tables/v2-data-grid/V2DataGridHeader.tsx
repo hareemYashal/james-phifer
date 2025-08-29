@@ -1,0 +1,35 @@
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Download, Trash2 } from "lucide-react";
+import type { V2DataRowData } from "@/lib/v2-data-utils";
+
+interface V2DataGridHeaderProps {
+    selectedRows: V2DataRowData[];
+    onExport: () => void;
+    onDeleteSelected: () => void;
+}
+
+export const V2DataGridHeader: React.FC<
+    V2DataGridHeaderProps
+> = ({ selectedRows, onExport, onDeleteSelected }) => {
+    return (
+        <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+                <span>Company & Contact Details with Data Deliverables and Container Information</span>
+                <div className="flex gap-2">
+                    {/* <Button onClick={onExport} size="sm" variant="outline">
+            <Download className="h-4 w-4" />
+            Export
+          </Button> */}
+                    {selectedRows.length > 0 && (
+                        <Button onClick={onDeleteSelected} size="sm" variant="destructive">
+                            <Trash2 className="h-4 w-4" />
+                            Delete ({selectedRows.length})
+                        </Button>
+                    )}
+                </div>
+            </CardTitle>
+        </CardHeader>
+    );
+};
