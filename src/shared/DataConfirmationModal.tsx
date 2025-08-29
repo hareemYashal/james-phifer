@@ -1,4 +1,4 @@
-import EditableTable from "@/components/table";
+// import EditableTable from "@/components/table"; // COMMENTED OUT - Using AG Grid only now
 import { X } from "lucide-react";
 import React from "react";
 

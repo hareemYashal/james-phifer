@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { fetchUserDetails } from "@/lib/actions/auth";
 import Header from "@/shared/header";
 import Loader from "../ui/loader";
-import DocumentsViewer from "./documents-viewer";
+// import DocumentsViewer from "./documents-viewer"; // COMMENTED OUT - Using AG Grid only now
 import { Document } from "@/types";
 import { useUserContext } from "@/context/user-context";
 import { useRouter } from "next/navigation";
@@ -22,8 +22,9 @@ export default function PdfViewerClient() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActive] = useState<string>("pdfViewer");
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [isDocumentsLoading, setIsDocumentsLoading] = useState(false);
+  // OLD DOCUMENTS STATE - COMMENTED OUT - Using AG Grid only now
+  // const [documents, setDocuments] = useState<Document[]>([]);
+  // const [isDocumentsLoading, setIsDocumentsLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -46,6 +47,8 @@ export default function PdfViewerClient() {
     checkAuth();
   }, []);
 
+  // OLD DOCUMENTS FETCHING - COMMENTED OUT - Using AG Grid only now
+  /*
   useEffect(() => {
     const fetchDocuments = async () => {
       try {
@@ -84,6 +87,7 @@ export default function PdfViewerClient() {
       fetchDocuments();
     }
   }, [user, activeTab]);
+  */
 
   return (
     <div
@@ -120,12 +124,14 @@ export default function PdfViewerClient() {
               activeTab={activeTab}
             />
           </div>
+          {/* OLD DOCUMENTS VIEWER - COMMENTED OUT - Using AG Grid only now
           {activeTab === "documents" ? (
             <DocumentsViewer
               documents={documents}
               loading={isDocumentsLoading}
             />
-          ) : activeTab === "userManagement" ? (
+          ) : */}
+          {activeTab === "userManagement" ? (
             <UserManagement />
           ) : activeTab === "labManagement" ? (
             <LabManagement />

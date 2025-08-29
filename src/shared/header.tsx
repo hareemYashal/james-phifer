@@ -139,7 +139,7 @@ const Header: React.FC<HeaderProps> = ({
             PDF Viewer
           </button>
 
-          {showLabDocumentsButton && (
+          {/* {showLabDocumentsButton && (
             <button
               onClick={handleMyDocuments}
               style={{
@@ -162,7 +162,7 @@ const Header: React.FC<HeaderProps> = ({
             >
               Lab Documents
             </button>
-          )}
+          )} */}
 
           {showLabManagementButton && (
             <button
@@ -304,7 +304,7 @@ const Header: React.FC<HeaderProps> = ({
                     PDF Viewer
                   </button>
 
-                  {showLabDocumentsButton && (
+                  {/* {showLabDocumentsButton && (
                     <button
                       onClick={handleMyDocuments}
                       style={{
@@ -331,7 +331,7 @@ const Header: React.FC<HeaderProps> = ({
                     >
                       Lab Documents
                     </button>
-                  )}
+                  )} */}
 
                   {showLabManagementButton && (
                     <button
