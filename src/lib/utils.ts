@@ -9,7 +9,7 @@ export function cn(...inputs: ClassValue[]) {
 export async function processFastAPI(file: File): Promise<any> {
   try {
     console.log("🚀 Attempting to call FastAPI at:", `${FASTAPIURL}/extract`);
-    console.log("📁 File details:", { name: file.name, size: file.size, type: file.type });
+    console.log("📁 File details:", { name: file?.name, size: file?.size, type: file?.type });
 
     const formData = new FormData();
     formData.append("file", file);
@@ -24,27 +24,27 @@ export async function processFastAPI(file: File): Promise<any> {
       },
     });
 
-    console.log("📡 Response status:", response.status);
-    console.log("📡 Response ok:", response.ok);
+    console.log("📡 Response status:", response?.status);
+    console.log("📡 Response ok:", response?.ok);
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (!response?.ok) {
+      const errorText = await response?.text();
       console.error("❌ API Error Response:", errorText);
-      throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(`API Error: ${response?.status} ${response?.statusText} - ${errorText}`);
     }
 
-    const result = await response.json();
+    const result = await response?.json();
     return result;
   } catch (error) {
     console.error("❌ FASTAPIURL processing error:", error);
     console.error("❌ Error details:", {
-      message: error instanceof Error ? error.message : "Unknown error",
-      name: error instanceof Error ? error.name : "Unknown",
-      stack: error instanceof Error ? error.stack : "No stack trace"
+      message: error instanceof Error ? error?.message : "Unknown error",
+      name: error instanceof Error ? error?.name : "Unknown",
+      stack: error instanceof Error ? error?.stack : "No stack trace"
     });
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
+      error: error instanceof Error ? error?.message : "Unknown error occurred",
     };
   }
 }

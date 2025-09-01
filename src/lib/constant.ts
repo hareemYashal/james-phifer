@@ -3,4 +3,4 @@ export const dateRegex =
 export const qtyMatchRegex = /\b(\d+)\s*(?:x\s*)?([A-Za-z\s]+)/i;
 export const frontend_url = `${process.env.NEXT_PUBLIC_SITE_URL}`;
 export const APIURL = `https://api.mudtarib.com`;
-export const FASTAPIURL = `http://34.74.141.81:8000`;
+export const FASTAPIURL = `https://api.pciforge.net`;
