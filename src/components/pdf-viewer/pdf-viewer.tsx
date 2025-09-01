@@ -577,10 +577,10 @@ export default function FormParserInterface() {
     try {
       const result = await processFastAPI(file);
       console.log('FastAPI result:', result);
-      console.log('FastAPI result extracted_fields:', result.extracted_fields);
-      setFastData(result.extracted_fields);
+      console.log('FastAPI result extracted_fields:', result?.extracted_fields);
+      setFastData(result?.extracted_fields);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to process document with FastAPI");
+      setError(error instanceof Error ? error?.message : "Failed to process document with FastAPI");
     } finally {
       setLoading(false);
     }
