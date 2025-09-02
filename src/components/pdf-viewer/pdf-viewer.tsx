@@ -52,6 +52,7 @@ import ConfirmationModal from "@/shared/DataConfirmationModal";
 // import { CompanyContactGrid } from "../grid-tables/company-contact-grid/company-contact-grid";
 // import { SampleDataGrid } from "../grid-tables/sample-data-grid/sample-data-grid";
 import { V2DataGrid } from "../grid-tables/v2-data-grid/v2-data-grid";
+import { V2SampleDataGrid } from "../grid-tables/v2-sample-data-grid/v2-sample-data-grid";
 import { sampleExtractedFields } from "@/lib/sample-extracted-fields";
 import { Button } from "../ui/button";
 import { Document as DocumentType } from "@/types";
@@ -337,12 +338,13 @@ export default function FormParserInterface() {
   // const companyContactGridRef = useRef<{ handleExportData: () => void; getCurrentData: () => any[] }>(null);
   // const sampleDataGridRef = useRef<{ handleExportData: () => void; getCurrentData: () => { sampleData: any[]; nonSampleData: any[] } }>(null);
   const v2DataGridRef = useRef<{ handleExportData: () => void; getCurrentData: () => any[] }>(null);
+  const v2SampleDataGridRef = useRef<{ handleExportData: () => void; getCurrentData: () => { sampleData: any[] } }>(null);
 
   // State to hold current grid data for export
   const [currentCompanyContactData, setCurrentCompanyContactData] = useState<any[]>([]);
   const [currentSampleData, setCurrentSampleData] = useState<any[]>([]);
   const [currentNonSampleData, setCurrentNonSampleData] = useState<any[]>([]);
-  const [fastData, setFastData] = useState<any[]>([]);
+  const [fastData, setFastData] = useState<any>(null);
 
   // Resizer states
   const [leftPanelWidth, setLeftPanelWidth] = useState(50); // Percentage
@@ -577,8 +579,9 @@ export default function FormParserInterface() {
     try {
       const result = await processFastAPI(file);
       console.log('FastAPI result:', result);
-      console.log('FastAPI result extracted_fields:', result?.extracted_fields);
-      setFastData(result?.extracted_fields);
+      console.log('FastAPI result general_information:', result?.general_information);
+      console.log('FastAPI result sample_data_information:', result?.sample_data_information);
+      setFastData(result);
     } catch (error) {
       setError(error instanceof Error ? error?.message : "Failed to process document with FastAPI");
     } finally {
@@ -736,18 +739,20 @@ export default function FormParserInterface() {
 
   // Handle field change for fastData (V2DataGrid)
   const handleFastDataFieldChange = (index: number, value: string) => {
-    if (fastData && fastData.length > index && index >= 0) {
-      const updatedData = [...fastData];
-      updatedData[index] = { ...updatedData[index], value };
+    if (fastData && fastData.general_information && fastData.general_information.length > index && index >= 0) {
+      const updatedData = { ...fastData };
+      updatedData.general_information = [...updatedData.general_information];
+      updatedData.general_information[index] = { ...updatedData.general_information[index], value };
       setFastData(updatedData);
     }
   };
 
   // Handle field removal for fastData (V2DataGrid)
   const handleFastDataRemoveField = (index: number) => {
-    if (fastData && fastData.length > index && index >= 0) {
-      const updatedData = [...fastData];
-      updatedData.splice(index, 1);
+    if (fastData && fastData.general_information && fastData.general_information.length > index && index >= 0) {
+      const updatedData = { ...fastData };
+      updatedData.general_information = [...updatedData.general_information];
+      updatedData.general_information.splice(index, 1);
       setFastData(updatedData);
     }
   };
@@ -1371,14 +1376,21 @@ export default function FormParserInterface() {
                   </div>
                 </div>
               ) : // Check for fastData first (new FastAPI endpoint)
-                fastData && fastData.length > 0 ? (
+                fastData && typeof fastData === 'object' && (fastData.general_information || fastData.sample_data_information) ? (
                   <div className="space-y-6">
                     <V2DataGrid
                       ref={v2DataGridRef}
-                      extractedFields={fastData}
+                      extractedFields={fastData.general_information}
                       onFieldChange={handleFastDataFieldChange}
                       onRemoveField={handleFastDataRemoveField}
                       onExportData={setCurrentCompanyContactData}
+                    />
+                    <V2SampleDataGrid
+                      ref={v2SampleDataGridRef}
+                      sampleDataArray={fastData.sample_data_information}
+                      onExportData={(sampleData) => {
+                        setCurrentSampleData(sampleData);
+                      }}
                     />
                   </div>
                 ) : (
@@ -1892,7 +1904,7 @@ export default function FormParserInterface() {
                         boxShadow: "0 2px 4px rgba(59, 130, 246, 0.2)",
                         transition: "all 0.2s ease",
                       }}
-                      disabled={fastData.length === 0}
+                      disabled={!fastData}
                     >
                       <Import size={16} />
                       Export to Excel
