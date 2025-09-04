@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import React, { useState } from "react";
+
 interface ColumnToggleProps {
   columns: { field: string; headerName: string }[];
   visibleMap: Record<string, boolean>;
@@ -21,7 +22,7 @@ export const ColumnToggle: React.FC<ColumnToggleProps> = ({ columns, visibleMap,
 
   return (
     <div className="relative inline-block">
-      <DropdownMenu open={open} onOpenChange={setOpen} >
+      <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm">
             Columns
@@ -33,23 +34,21 @@ export const ColumnToggle: React.FC<ColumnToggleProps> = ({ columns, visibleMap,
           {columns.map((col) => {
             if (col.headerName.toLowerCase() === "actions") return null;
             return (
-              <div className="flex items-center gap-3  hover:bg-gray-100 rounded-md cursor-pointer" key={col.field}>
-                <Checkbox className="ml-2" id={col.field} checked={visibleMap[col.field] ?? true} onCheckedChange={(checked) => onToggle(col.field, checked as boolean)} />
-
+              <div className="flex items-center gap-3 hover:bg-gray-100 rounded-md cursor-pointer" key={col.field}>
+                <Checkbox
+                  className="ml-2"
+                  id={col.field}
+                  checked={visibleMap[col.field] ?? true}
+                  onCheckedChange={(checked) => onToggle(col.field, checked as boolean)}
+                />
                 <Label className="text-sm w-full capitalize py-2 hover:text-primary cursor-pointer" htmlFor={col.field}>
                   {col.headerName?.replace(/_/g, " ")}
-
                 </Label>
               </div>
-
-            )
+            );
           })}
-
-
-
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-
   );
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, forwardRef, useImperativeHandle } from "react";
+import { useMemo, forwardRef, useImperativeHandle, useState } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import styles from "./V2DataGrid.module.css";
+import { ColumnToggle } from "./ColumnToggle";
 
 // Extracted components and utilities
 import { V2DataGridHeader } from "./V2DataGridHeader";
@@ -54,10 +55,25 @@ export const V2DataGrid = forwardRef<
         onExportData,
     });
 
-    const columnDefs = useMemo(
-        () => getV2DataColumnDefs(onFieldChange),
-        [onFieldChange]
-    );
+    // Column visibility state
+    const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
+
+    // Get column definitions and manage visibility
+    const columnDefs = useMemo(() => {
+        const cols = getV2DataColumnDefs(onFieldChange);
+        return cols.map(col => ({
+            ...col,
+            hide: col.field ? columnVisibility[col.field] === false : false
+        }));
+    }, [onFieldChange, columnVisibility]);
+
+    // Handle column visibility toggle
+    const handleColumnToggle = (field: string, visible: boolean) => {
+        setColumnVisibility(prev => ({
+            ...prev,
+            [field]: visible
+        }));
+    };
 
     // Expose functions to parent via ref
     useImperativeHandle(ref, () => ({
@@ -81,6 +97,14 @@ export const V2DataGrid = forwardRef<
                             value={quickFilterText}
                             onChange={(e) => setQuickFilterText(e.target.value)}
                             className="max-w-sm"
+                        />
+                        <ColumnToggle
+                            columns={columnDefs.map(col => ({
+                                field: col.field || '',
+                                headerName: (col.headerName as string) || col.field || ''
+                            }))}
+                            visibleMap={columnVisibility}
+                            onToggle={handleColumnToggle}
                         />
                         {selectedRows.length > 0 && (
                             <Badge variant="secondary">
