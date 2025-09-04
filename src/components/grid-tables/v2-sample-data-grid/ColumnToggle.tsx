@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
 import React, { useState } from "react";
 interface ColumnToggleProps {
   columns: { field: string; headerName: string }[];
@@ -29,12 +30,23 @@ export const ColumnToggle: React.FC<ColumnToggleProps> = ({ columns, visibleMap,
         <DropdownMenuContent className="min-w-[230px] p-2">
           <DropdownMenuLabel>Columns</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {columns.map((col) => (
-            <DropdownMenuItem key={col.field}>
-              <Checkbox id={col.field} checked={visibleMap[col.field] ?? true} onCheckedChange={(checked) => onToggle(col.field, checked as boolean)} />
-              {col.headerName}
-            </DropdownMenuItem>
-          ))}
+          {columns.map((col) => {
+            if (col.headerName.toLowerCase() === "actions") return null;
+            return (
+              <div className="flex items-center gap-3  hover:bg-gray-100 rounded-md cursor-pointer" key={col.field}>
+                <Checkbox className="ml-2" id={col.field} checked={visibleMap[col.field] ?? true} onCheckedChange={(checked) => onToggle(col.field, checked as boolean)} />
+
+                <Label className="text-sm capitalize py-2 hover:text-primary cursor-pointer" htmlFor={col.field}>
+                  {col.headerName?.replace(/_/g, " ")}
+
+                </Label>
+              </div>
+
+            )
+          })}
+
+
+
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
