@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export async function processFastAPI(file: File): Promise<any> {
+export async function processFastAPI(file: File, abortSignal?: AbortSignal): Promise<any> {
   try {
     console.log("🚀 Attempting to call FastAPI at:", `${FASTAPIURL}/extract`);
     console.log("📁 File details:", { name: file?.name, size: file?.size, type: file?.type });
@@ -17,6 +17,7 @@ export async function processFastAPI(file: File): Promise<any> {
     const response = await fetch(`${FASTAPIURL}/extract`, {
       method: "POST",
       body: formData,
+      signal: abortSignal,
       // Add any headers your API requires
       headers: {
         // 'Authorization': 'Bearer your-token',
@@ -36,6 +37,16 @@ export async function processFastAPI(file: File): Promise<any> {
     const result = await response?.json();
     return result;
   } catch (error) {
+    // Handle AbortError specifically
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log("🛑 API request was aborted");
+      return {
+        success: false,
+        error: "Request was cancelled",
+        aborted: true,
+      };
+    }
+
     console.error("❌ FASTAPIURL processing error:", error);
     console.error("❌ Error details:", {
       message: error instanceof Error ? error?.message : "Unknown error",

@@ -334,6 +334,9 @@ export default function FormParserInterface() {
   const [isDragging, setIsDragging] = useState(false);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
 
+  // AbortController for API requests
+  const [currentAbortController, setCurrentAbortController] = useState<AbortController | null>(null);
+
   // Refs to trigger export from grids
   // const companyContactGridRef = useRef<{ handleExportData: () => void; getCurrentData: () => any[] }>(null);
   // const sampleDataGridRef = useRef<{ handleExportData: () => void; getCurrentData: () => { sampleData: any[]; nonSampleData: any[] } }>(null);
@@ -505,8 +508,13 @@ export default function FormParserInterface() {
       document.removeEventListener("mouseup", handleResizerMouseUp);
       document.removeEventListener("touchmove", handleResizerTouchMove);
       document.removeEventListener("touchend", handleResizerTouchEnd);
+
+      // Abort any ongoing API request when component unmounts
+      if (currentAbortController) {
+        currentAbortController.abort();
+      }
     };
-  }, []);
+  }, [currentAbortController]);
 
   // Add global style for body when resizing to prevent text selection
   useEffect(() => {
@@ -573,19 +581,37 @@ export default function FormParserInterface() {
 
   // I need to add a new function to process the document with the new API
   const processDocumentWithFastAPI = async (file: File) => {
+    // Abort any existing request
+    if (currentAbortController) {
+      currentAbortController.abort();
+    }
+
+    // Create new AbortController for this request
+    const abortController = new AbortController();
+    setCurrentAbortController(abortController);
+
     setLoading(true);
     setError(null);
 
     try {
-      const result = await processFastAPI(file);
-      console.log('FastAPI result:', result);
-      console.log('FastAPI result general_information:', result?.general_information);
-      console.log('FastAPI result sample_data_information:', result?.sample_data_information);
-      setFastData(result);
+      const result = await processFastAPI(file, abortController.signal);
+
+      // Only process result if the request wasn't aborted
+      if (!result.aborted) {
+        console.log('FastAPI result:', result);
+        console.log('FastAPI result general_information:', result?.general_information);
+        console.log('FastAPI result sample_data_information:', result?.sample_data_information);
+        setFastData(result);
+      }
     } catch (error) {
-      setError(error instanceof Error ? error?.message : "Failed to process document with FastAPI");
+      // Don't show error if the request was aborted
+      if (error instanceof Error && error.name !== 'AbortError') {
+        setError(error instanceof Error ? error?.message : "Failed to process document with FastAPI");
+      }
     } finally {
       setLoading(false);
+      // Clear the AbortController if this is still the current one
+      setCurrentAbortController(prev => prev === abortController ? null : prev);
     }
   };
 
@@ -1859,6 +1885,19 @@ export default function FormParserInterface() {
                 >
                   <button
                     onClick={() => {
+                      // Abort current API request if running
+                      if (currentAbortController) {
+                        currentAbortController.abort();
+                        setCurrentAbortController(null);
+                      }
+
+                      // Stop loading immediately
+                      setLoading(false);
+
+                      // Reset states
+                      setError(null);
+                      setFastData(null);
+
                       const fileInput = document.getElementById(
                         "file-input"
                       ) as HTMLInputElement;

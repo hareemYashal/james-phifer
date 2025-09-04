@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, forwardRef, useImperativeHandle } from "react";
+import { useMemo, forwardRef, useImperativeHandle, useState } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import { V2SampleDataGridHeader } from "./V2SampleDataGridHeader";
 import { getColumnDefs, defaultColDef } from "./grid-config";
 import { useV2SampleDataGrid } from "@/hooks/useV2SampleDataGrid";
 import { Input } from "@/components/ui/input";
+import { ColumnToggle } from "./ColumnToggle";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -45,7 +46,25 @@ export const V2SampleDataGrid = forwardRef<
         getCurrentData,
     } = useV2SampleDataGrid({ sampleDataArray, onExportData });
 
-    const columnDefs = useMemo(() => getColumnDefs(sampleDataArray), [sampleDataArray]);
+    // Column visibility state
+    const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
+
+    // Get column definitions and manage visibility
+    const columnDefs = useMemo(() => {
+        const cols = getColumnDefs(sampleDataArray);
+        return cols.map(col => ({
+            ...col,
+            hide: col.field ? columnVisibility[col.field] === false : false
+        }));
+    }, [sampleDataArray, columnVisibility]);
+
+    // Handle column visibility toggle
+    const handleColumnToggle = (field: string, visible: boolean) => {
+        setColumnVisibility(prev => ({
+            ...prev,
+            [field]: visible
+        }));
+    };
 
     // Expose functions to parent via ref
     useImperativeHandle(ref, () => ({
@@ -69,6 +88,14 @@ export const V2SampleDataGrid = forwardRef<
                             value={quickFilterText}
                             onChange={(e) => setQuickFilterText(e.target.value)}
                             className="max-w-sm"
+                        />
+                        <ColumnToggle
+                            columns={columnDefs.map(col => ({
+                                field: col.field || '',
+                                headerName: (col.headerName as string) || col.field || ''
+                            }))}
+                            visibleMap={columnVisibility}
+                            onToggle={handleColumnToggle}
                         />
                         {selectedRows.length > 0 && (
                             <Badge variant="secondary">
