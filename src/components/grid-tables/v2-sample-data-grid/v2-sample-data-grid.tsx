@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, forwardRef, useImperativeHandle } from "react";
+import { useMemo, forwardRef, useImperativeHandle, useState } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
 import { Badge } from "@/components/ui/badge";
@@ -14,11 +14,13 @@ import { V2SampleDataGridHeader } from "./V2SampleDataGridHeader";
 import { getColumnDefs, defaultColDef } from "./grid-config";
 import { useV2SampleDataGrid } from "@/hooks/useV2SampleDataGrid";
 import { Input } from "@/components/ui/input";
+import { ColumnToggle } from "./ColumnToggle";
+import type { ExtractedField } from "@/lib/sample-data-extraction-utils";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 interface V2SampleDataGridProps {
-    sampleDataArray?: any[];
+    extractedFields?: ExtractedField[];
     onExportData?: (sampleData: any[]) => void;
 }
 
@@ -26,7 +28,7 @@ export const V2SampleDataGrid = forwardRef<
     { handleExportData: () => void; getCurrentData: () => { sampleData: any[] } },
     V2SampleDataGridProps
 >(function V2SampleDataGrid({
-    sampleDataArray = [],
+    extractedFields = [],
     onExportData,
 }, ref) {
     const {
@@ -43,9 +45,25 @@ export const V2SampleDataGrid = forwardRef<
         handleDeleteSelected,
         handleExportData,
         getCurrentData,
-    } = useV2SampleDataGrid({ sampleDataArray, onExportData });
+    } = useV2SampleDataGrid({ extractedFields, onExportData });
 
-    const columnDefs = useMemo(() => getColumnDefs(sampleDataArray), [sampleDataArray]);
+
+    const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
+    const columnDefs = useMemo(() => {
+        const cols = getColumnDefs(extractedFields);
+        return cols.map(col => ({
+            ...col,
+            hide: col.field ? columnVisibility[col.field] === false : false
+        }));
+    }, [extractedFields, columnVisibility]);
+
+    const handleColumnToggle = (field: string, visible: boolean) => {
+        setColumnVisibility(prev => ({
+            ...prev,
+            [field]: visible
+        }));
+    };
+
 
     // Expose functions to parent via ref
     useImperativeHandle(ref, () => ({
@@ -76,6 +94,14 @@ export const V2SampleDataGrid = forwardRef<
                                 selected
                             </Badge>
                         )}
+                        <ColumnToggle
+                            columns={columnDefs.map(col => ({
+                                field: col.field || '',
+                                headerName: (col.headerName as string) || col.field || ''
+                            }))}
+                            visibleMap={columnVisibility}
+                            onToggle={handleColumnToggle}
+                        />
                     </div>
 
                     {selectedRows.length > 0 && (

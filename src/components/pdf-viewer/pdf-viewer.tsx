@@ -1376,18 +1376,18 @@ export default function FormParserInterface() {
                   </div>
                 </div>
               ) : // Check for fastData first (new FastAPI endpoint)
-                fastData && typeof fastData === 'object' && (fastData.general_information || fastData.sample_data_information) ? (
+                fastData && typeof fastData === 'object' && (fastData.general_information || fastData.sample_data_information || fastData.extracted_fields) ? (
                   <div className="space-y-6">
                     <V2DataGrid
                       ref={v2DataGridRef}
-                      extractedFields={fastData.general_information}
+                      extractedFields={fastData.general_information || fastData.extracted_fields}
                       onFieldChange={handleFastDataFieldChange}
                       onRemoveField={handleFastDataRemoveField}
                       onExportData={setCurrentCompanyContactData}
                     />
                     <V2SampleDataGrid
                       ref={v2SampleDataGridRef}
-                      sampleDataArray={fastData.sample_data_information}
+                      extractedFields={fastData.extracted_fields || []}
                       onExportData={(sampleData) => {
                         setCurrentSampleData(sampleData);
                       }}
