@@ -36,7 +36,7 @@ export const ColumnToggle: React.FC<ColumnToggleProps> = ({ columns, visibleMap,
               <div className="flex items-center gap-3  hover:bg-gray-100 rounded-md cursor-pointer" key={col.field}>
                 <Checkbox className="ml-2" id={col.field} checked={visibleMap[col.field] ?? true} onCheckedChange={(checked) => onToggle(col.field, checked as boolean)} />
 
-                <Label className="text-sm capitalize py-2 hover:text-primary cursor-pointer" htmlFor={col.field}>
+                <Label className="text-sm w-full capitalize py-2 hover:text-primary cursor-pointer" htmlFor={col.field}>
                   {col.headerName?.replace(/_/g, " ")}
 
                 </Label>

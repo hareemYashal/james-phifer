@@ -2,9 +2,7 @@ import type { ColDef } from "ag-grid-community";
 import {
   extractSampleDataFromFields,
   getSampleDataColumns,
-  createEmptySampleRow,
   type ExtractedField,
-  type SampleDataRow,
 } from "./sample-data-extraction-utils";
 
 // Data interfaces for V2 Sample Data Grid - now dynamic
@@ -33,7 +31,11 @@ export const generateDynamicColumnDefs = (
   columns.forEach((columnName, index) => {
     columnDefs.push({
       field: columnName,
-      headerName: columnName,
+      //capitalize the first letter of each word
+      headerName: columnName
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" "),
       cellDataType: "text",
       width: Math.max(120, Math.min(250, columnName.length * 10 + 80)), // Dynamic width based on content
       filter: "agTextColumnFilter",

@@ -17,7 +17,7 @@ export interface SampleDataRow {
 }
 
 // Field mappings for sample data columns
-const SAMPLE_FIELD_MAPPINGS: Record<string, string> = {
+export const SAMPLE_FIELD_MAPPINGS: Record<string, string> = {
   customer_sample_id: "Customer Sample ID",
   matrix_type: "Matrix",
   grab: "Comp/Grab",
@@ -38,18 +38,18 @@ const SAMPLE_FIELD_MAPPINGS: Record<string, string> = {
 export const extractSampleDataFromFields = (
   extractedFields: ExtractedField[]
 ): SampleDataRow[] => {
-  console.log(
-    "Starting sample data extraction from",
-    extractedFields.length,
-    "fields"
-  );
+  //   console.log(
+  //     "Starting sample data extraction from",
+  //     extractedFields.length,
+  //     "fields"
+  //   );
 
   // Filter for sample_field type entries
   const sampleFields = extractedFields.filter(
     (field) => field.type === "sample_field" && field.sample_id
   );
 
-  console.log("Found", sampleFields.length, "sample fields");
+  //   console.log("Found", sampleFields.length, "sample fields");
 
   // Group by sample_id
   const sampleGroups: Record<string, ExtractedField[]> = {};
@@ -62,11 +62,11 @@ export const extractSampleDataFromFields = (
     }
   });
 
-  console.log(
-    "Grouped into",
-    Object.keys(sampleGroups).length,
-    "sample groups"
-  );
+  //   console.log(
+  //     "Grouped into",
+  //     Object.keys(sampleGroups).length,
+  //     "sample groups"
+  //   );
 
   // Convert groups to sample data rows
   const sampleDataRows: SampleDataRow[] = [];
